@@ -44,10 +44,6 @@ public class TpkC {
     tpkJniJNI.TpkC_init(swigCPtr, this);
   }
 
-  public void _register(IDemandsCB demandsNotify) {
-    tpkJniJNI.TpkC__register(swigCPtr, this, IDemandsCB.getCPtr(demandsNotify), demandsNotify);
-  }
-
   public void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
     tpkJniJNI.TpkC_newDemands(swigCPtr, this, mAz, mEl, eAz, eEl, m3R, m3T);
   }

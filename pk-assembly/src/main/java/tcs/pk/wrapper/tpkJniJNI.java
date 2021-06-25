@@ -9,26 +9,10 @@
 package tcs.pk.wrapper;
 
 public class tpkJniJNI {
-  public final static native void IDemandsCB_newDemands(long jarg1, IDemandsCB jarg1_, double jarg2, double jarg3, double jarg4, double jarg5, double jarg6, double jarg7);
-  public final static native void IDemandsCB_newDemandsSwigExplicitIDemandsCB(long jarg1, IDemandsCB jarg1_, double jarg2, double jarg3, double jarg4, double jarg5, double jarg6, double jarg7);
-  public final static native void delete_IDemandsCB(long jarg1);
-  public final static native long new_IDemandsCB();
-  public final static native void IDemandsCB_director_connect(IDemandsCB obj, long cptr, boolean mem_own, boolean weak_global);
-  public final static native void IDemandsCB_change_ownership(IDemandsCB obj, long cptr, boolean take_or_release);
   public final static native long new_TpkC();
   public final static native void delete_TpkC(long jarg1);
   public final static native void TpkC_init(long jarg1, TpkC jarg1_);
-  public final static native void TpkC__register(long jarg1, TpkC jarg1_, long jarg2, IDemandsCB jarg2_);
   public final static native void TpkC_newDemands(long jarg1, TpkC jarg1_, double jarg2, double jarg3, double jarg4, double jarg5, double jarg6, double jarg7);
   public final static native void TpkC_newTarget(long jarg1, TpkC jarg1_, double jarg2, double jarg3);
   public final static native void TpkC_offset(long jarg1, TpkC jarg1_, double jarg2, double jarg3);
-
-  public static void SwigDirector_IDemandsCB_newDemands(IDemandsCB jself, double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
-    jself.newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
-  }
-
-  private final static native void swig_module_init();
-  static {
-    swig_module_init();
-  }
 }
