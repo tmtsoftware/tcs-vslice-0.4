@@ -80,6 +80,8 @@ class CommandHandlerActor(
         tpkWrapper.initiate()
       }
     }).start()
+
+    // XXX TODO FIXME
     try Thread.sleep(100, 0)
     catch {
       case e: InterruptedException =>

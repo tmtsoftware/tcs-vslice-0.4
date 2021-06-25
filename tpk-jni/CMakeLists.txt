@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 enable_language(CXX)
 
 set(DEFAULT_BUILD_TYPE "Release")
@@ -14,18 +14,17 @@ endif ()
 include(GNUInstallDirs)
 
 # Edit this to point to the top level TPK project source
-set(TPK_DIR /usr/local/include)
+set(INCLUDE_DIR /usr/local/include)
 
 project(tpk-jni LANGUAGES CXX VERSION 0.1)
-include_directories(. ${TPK_DIR} ${TPK_DIR}/tpk ${TPK_DIR}/slalib ${TPK_DIR}/tcspk)
+include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
 SET(CMAKE_SWIG_FLAGS -c++ -java -package tcs.pk.wrapper)
 find_package(SWIG REQUIRED COMPONENTS java)
 include(${SWIG_USE_FILE})
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
 
-#link_directories(/usr/local/lib)
-link_libraries(tinyxml tpk tcs slalib m pthread)
+link_libraries(tinyxml tpk tcs slalib csw-shared m pthread)
 
 swig_add_library(${PROJECT_NAME}  LANGUAGE java  SOURCES
                 impl.cpp
