@@ -9,6 +9,7 @@ tmp
 .history
 dist
 .idea
+cmake-build-debug
 .metals
 *.iml
 /out

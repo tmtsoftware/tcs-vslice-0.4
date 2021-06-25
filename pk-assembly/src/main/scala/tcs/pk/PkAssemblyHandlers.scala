@@ -25,6 +25,9 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   import cswCtx._
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
+  private val lifecycleActor = ctx.spawn(LifecycleActor.make(cswCtx), "LifecycleActor")
+  private val eventHandlerActor = ctx.spawn(EventHandlerActor.make(cswCtx), "EventHandlerActor")
+  private val commandHandlerActor = ctx.spawn(CommandHandlerActor.make(cswCtx), "CommandHandlerActor")
 
   override def initialize(): Unit = {
     log.info("Initializing pk assembly...")

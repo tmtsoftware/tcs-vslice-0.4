@@ -5,6 +5,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   `enc-hcd`,
   `mcs-assembly`,
   `mcs-hcd`,
+  `tpk-jni`,
   `tcs-tcsdeploy`
 )
 
@@ -40,6 +41,12 @@ lazy val `mcs-assembly` = project
 lazy val `mcs-hcd` = project
   .settings(
     libraryDependencies ++= Dependencies.`mcs-hcd`
+  )
+
+// Java wrapper for native TPK C lib, using cmake and swig
+// XXX TODO: Call make from sbt
+lazy val `tpk-jni` = project
+  .settings(
   )
 
 // deploy module
