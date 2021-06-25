@@ -6,7 +6,7 @@ import csw.framework.models.CswContext
 import csw.framework.scaladsl.ComponentHandlers
 import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandResponse._
-import csw.params.commands.ControlCommand
+import csw.params.commands.{CommandResponse, ControlCommand}
 import csw.params.core.models.Id
 import csw.time.core.models.UTCTime
 
@@ -25,9 +25,9 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   import cswCtx._
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
-  private val lifecycleActor = ctx.spawn(LifecycleActor.make(cswCtx), "LifecycleActor")
-  private val eventHandlerActor = ctx.spawn(EventHandlerActor.make(cswCtx), "EventHandlerActor")
-  private val commandHandlerActor = ctx.spawn(CommandHandlerActor.make(cswCtx), "CommandHandlerActor")
+  private val lifecycleActor                = ctx.spawn(LifecycleActor.make(cswCtx), "LifecycleActor")
+  private val eventHandlerActor             = ctx.spawn(EventHandlerActor.make(cswCtx), "EventHandlerActor")
+  private val commandHandlerActor           = ctx.spawn(CommandHandlerActor.make(cswCtx, online = true, eventHandlerActor), "CommandHandlerActor")
 
   override def initialize(): Unit = {
     log.info("Initializing pk assembly...")
@@ -37,7 +37,13 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   override def validateCommand(runId: Id, controlCommand: ControlCommand): ValidateCommandResponse = Accepted(runId)
 
-  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = Completed(runId)
+  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
+    log.debug("Inside JPkAssemblyHandlers: onSubmit()")
+
+    commandHandlerActor.tell(CommandHandlerActor.SubmitCommand(runId, controlCommand))
+    CommandResponse.Started(runId)
+
+  }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}
 

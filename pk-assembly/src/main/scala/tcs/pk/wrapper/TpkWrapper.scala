@@ -10,7 +10,7 @@ import tcs.pk.EventHandlerActor
  *
  */
 object TpkWrapper {
-  System.loadLibrary("example")
+  System.loadLibrary("pk-jni")
 }
 
 class TpkWrapper(var eventHandlerActor: ActorRef[EventHandlerActor.EventMessage]) {
