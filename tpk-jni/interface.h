@@ -33,6 +33,8 @@ namespace tpkJni {
 
         void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T);
 
+        void publishMcsDemand(double mAz, double mEl);
+
         void newTarget(double ra, double dec);
 
         void offset(double raO, double decO);

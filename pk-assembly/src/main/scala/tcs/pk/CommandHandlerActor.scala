@@ -6,7 +6,9 @@ import csw.framework.models.CswContext
 import CommandHandlerActor._
 import akka.actor.typed.{ActorRef, Behavior}
 import csw.params.commands.ControlCommand
+import csw.params.core.generics.KeyType
 import csw.params.core.models.Id
+import csw.params.events.{EventKey, EventName, SystemEvent}
 import tcs.pk.EventHandlerActor.EventMessage
 import tcs.pk.wrapper.TpkWrapper
 
@@ -18,15 +20,17 @@ object CommandHandlerActor {
   case object GoOnlineMessage                              extends CommandMessage
   case object GoOfflineMessage                             extends CommandMessage
 
-  def make(cswCtx: CswContext, online: Boolean, eventHandlerActor: ActorRef[EventMessage]): Behavior[CommandMessage] = {
-    Behaviors.setup(ctx => new CommandHandlerActor(ctx, cswCtx, online, eventHandlerActor))
+  private val demandsParamKey =     KeyType.AltAzCoordKey.make("demands")
+
+
+  def make(cswCtx: CswContext, eventHandlerActor: ActorRef[EventMessage]): Behavior[CommandMessage] = {
+    Behaviors.setup(ctx => new CommandHandlerActor(ctx, cswCtx, eventHandlerActor))
   }
 }
 
 class CommandHandlerActor(
     ctx: ActorContext[CommandMessage],
     cswCtx: CswContext,
-    online: Boolean,
     eventHandlerActor: ActorRef[EventMessage]
 ) extends AbstractBehavior[CommandMessage](ctx) {
 
@@ -36,10 +40,12 @@ class CommandHandlerActor(
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   implicit val timeout: Timeout             = Timeout(5.seconds)
   private val log                           = loggerFactory.getLogger
+  private var online                        = true
+  private val demandsEventName = EventKey(componentInfo.prefix, EventName("demands"))
 
-  // XXX TODO FIXME (pass in to actor?)
-  private var tpkWrapper: TpkWrapper = _
+  private val tpkWrapper: TpkWrapper = new TpkWrapper(eventHandlerActor)
 
+//  startSubscribingToEvents()
   initiateTpkEndpoint()
 
   override def onMessage(msg: CommandMessage): Behavior[CommandMessage] = {
@@ -47,16 +53,14 @@ class CommandHandlerActor(
       case SubmitCommand(runId, cmd) if cmd.commandName.name == "setTarget" =>
         log.info("Inside CommandHandlerActor: SetTargetMessage Received")
         handleSetTargetCommand(runId, cmd)
-        Behaviors.same
 
-      // XXX FIXME TODO: Maybe just make online a var!
       case GoOnlineMessage =>
         log.info("Inside CommandHandlerActor: GoOnlineMessage Received")
-        // change the behavior to online
-        CommandHandlerActor.make(cswCtx, online = true, eventHandlerActor)
+        online = true
       case GoOfflineMessage =>
-        CommandHandlerActor.make(cswCtx, online = false, eventHandlerActor)
+        online = false
     }
+    Behaviors.same
   }
 
   private def handleSetTargetCommand(runId: Id, cmd: ControlCommand): Unit = {
@@ -74,19 +78,20 @@ class CommandHandlerActor(
    */
   def initiateTpkEndpoint(): Unit = {
     log.debug("Inside JPkCommandHandlerActor: initiateTpkEndpoint")
-    tpkWrapper = new TpkWrapper(eventHandlerActor)
     new Thread(new Runnable() {
       override def run(): Unit = {
         tpkWrapper.initiate()
       }
     }).start()
-
-    // XXX TODO FIXME
-    try Thread.sleep(100, 0)
-    catch {
-      case e: InterruptedException =>
-        log.error("Inside TpkCommandHandler: initiateTpkEndpoint: Error is: " + e)
-    }
   }
+
+//  private def startSubscribingToEvents(): Unit = {
+//    val subscriber = eventService.defaultSubscriber
+//    val publisher = eventService.defaultPublisher
+//    val eventHandlerActor =
+//      ctx.spawn(eventHandler(log, publisher), "pkEventHandlerActor")
+//    subscriber.subscribeActorRef(Set(hcdEventKey), eventHandlerActor)
+//  }
+
 
 }

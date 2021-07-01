@@ -15,7 +15,7 @@ namespace tpkJni {
     const double d2Mas = 60 * 60 * 1000;
 
     // CSW component prefix
-    const char* prefix = "TCS.pk";
+    const char *prefix = "TCS.pk";
 
     // The SlowScan class implements the "slow" loop of the application.
 
@@ -109,55 +109,88 @@ namespace tpkJni {
         };
     };
 
-    // -- Tests publishing coordinate values --
-    static void publishAltAzCoord(CswEventServiceContext publisher) {
-        CswAltAzCoord altAzCoord1 = cswMakeAltAzCoord("BASE", 1083600000000, 153000000000);
-        CswCoord values[1];
-        values[0].altAzCoord = altAzCoord1;
-        CswArrayValue arrayValues = {.values = values, .numValues = 1};
-        CswParameter coordParam = cswMakeParameter("CoordParam", CoordKey, arrayValues, "NoUnits");
+    // Allan: Args are the mount az, el and M3 demands in degrees
+    void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, double m3Rotation,
+                          double m3Tilt) {
+        // Allan: Taken from the TPK_POC java callback code (Here we post an event instead of using the callback)
+        double ci = 32.5;
+        double ciz = 90 - ci;
+        double phir = M_PI * ci / 180;
+        double tci = tan(ci);
+        double cci = cos(ci);
+        double PI2 = M_PI * 2;
 
-        // -- ParamSet
-        CswParameter params[] = {coordParam};
-        CswParamSet paramSet = {.params = params, .numParams = 1};
+        // Convert eAz, eEl into base & cap coordinates
+        double azShift, base1, cap1; //, base2, cap2;
+        if ((ecsEl > PI2) || (ecsEl < 0))
+            ecsEl = 0;
+        if ((ecsAz > PI2) || (ecsAz < 0))
+            ecsAz = 0;
 
-        // -- Event --
-        CswEvent event = cswMakeEvent(SystemEvent, prefix, "AltAzCoordEvent", paramSet);
+        cap1 = acos(tan(ecsEl - ciz) / tci);
+//        cap2 = PI2 - cap1;
 
-        // -- Publish --
-        cswEventPublish(publisher, event);
+        if (ecsEl == PI2)
+            azShift = 0;
+        else
+            azShift = atan(sin(cap1) / cci * (1 - cos(cap1)));
 
-        // -- Cleanup --
-        cswFreeEvent(event);
+        if ((ecsAz + azShift) > PI2)
+            base1 = (ecsAz + azShift) - PI2;
+        else
+            base1 = ecsAz + azShift;
+
+//        if (ecsAz < azShift)
+//            base2 = PI2 + ecsAz - azShift;
+//        else
+//            base2 = ecsAz - azShift;
+
+        base1 = 180 * base1 / M_PI;
+        cap1 = 180 * cap1 / M_PI;
+
+        // base 1 & 2 and cap 1 & 2 can be used for CW, CCW and shortest path
+        // for now just base 1 and cap 1 are used
+
+        // Below condition will help in preventing TPK Default Demands
+        // from getting published and Demand Publishing will start only
+        // once New target or Offset Command is being received
+        if (publishDemands) {
+            publishMcsDemand(mcsAz, mcsEl);
+            publishEcsDemand(base1, cap1);
+            publishM3Demand(m3Rotation, m3Tilt);
+        }
     }
 
-    void TpkC::newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
-        CswAltAzCoord values[3];
-        values[0] = cswMakeAltAzCoord("mount", lround(mAz * d2Mas), lround(mEl * d2Mas));
-        values[1] = cswMakeAltAzCoord("enclosure", lround(eAz * d2Mas), lround(eEl * d2Mas));
-        values[2] = cswMakeAltAzCoord("enclosure", lround(m3R * d2Mas), lround(m3T * d2Mas));
-        CswArrayValue arrayValues = {.values = values, .numValues = 3};
-        CswParameter coordParam = cswMakeParameter("demandPositions", AltAzCoordKey, arrayValues, "NoUnits");
+    void TpkC::publishMcsDemand(double mAz, double mEl) {
+        // trackID
+        string trackIdAr[] = {"trackid-0"}; // TODO
+        CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
+        CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
+
+        // pos
+        CswAltAzCoord values[1];
+        values[0] = cswMakeAltAzCoord("BASE", lround(mAz * d2Mas), lround(mEl * d2Mas));
+        CswArrayValue arrayValues = {.values = values, .numValues = 1};
+        CswParameter coordParam = cswMakeParameter("pos", AltAzCoordKey, arrayValues, csw_unit_NoUnits);
+
+        // time
+        string timeAr[] = {"time-0"}; // TODO
+        CswArrayValue timeValues = {.values = timeAr, .numValues = 1};
+        CswParameter timeParam = cswMakeParameter("time", UTCTimeKey, timeValues, csw_unit_NoUnits);
+
 
         // -- ParamSet
-        CswParameter params[] = {coordParam};
-        CswParamSet paramSet = {.params = params, .numParams = 1};
+        CswParameter params[] = {trackIdParam, coordParam};
+        CswParamSet paramSet = {.params = params, .numParams = 3};
 
         // -- Event --
-        CswEvent event = cswMakeEvent(SystemEvent, prefix, "demands", paramSet);
+        CswEvent event = cswMakeEvent(SystemEvent, prefix, "MountDemandPosition", paramSet);
 
         // -- Publish --
         cswEventPublish(publisher, event);
 
         // -- Cleanup --
         cswFreeEvent(event);
-
-        // XXX TODO FIXME: Replace with posting event
-//        if (demandsNotifier != nullptr) {
-//            demandsNotifier->newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
-//        }
-
-
     }
 
 
@@ -223,7 +256,9 @@ namespace tpkJni {
         mount->setPai(0.0, tpk::ICRefSys());
         enclosure->setPai(0.0, tpk::ICRefSys());
 
+        // XXX TODO FIXME
         tpk::ICRSTarget target(*site, "10 12 23 11 09 06");
+
         //
         // Set the mount and enclosure to the same target
         //
@@ -243,6 +278,7 @@ namespace tpkJni {
 //        if (demandsNotifier == nullptr) printf("Register failed\n");
 //    }
 
+    // ra and dec are expected in degrees
     void TpkC::newTarget(double ra, double dec) {
         tpk::ICRSTarget target(*site, ra * tpk::TcsLib::d2r, dec * tpk::TcsLib::d2r);
         //tpk::ICRSTarget target(*site, "12 23 11 06 45 12");
