@@ -35,60 +35,63 @@
 */
 
 class ScanTask {
-    public:
+public:
 
     /// Constructor
-        ScanTask(
-	    int waitticks,     ///< Number of ticks between executions
-	    int prio           ///< thread priority
-	);
+    ScanTask(
+            int waitticks,     ///< Number of ticks between executions
+            int prio           ///< thread priority
+    );
 
     /// Set the process to be real-time.
-        static void makeRealTime();
+    static void makeRealTime();
 
     /// Virtual method executed every waitticks ticks.
-        virtual void scan() = 0;
+    virtual void scan() = 0;
 
     /// Start the scan task
     /**
         The tasks scan method does not runn until the scheduler has 
         been started
     */
-        void start();
+    [[noreturn]] void start();
 
     /// Start the scheduler
-        static void startScheduler();
+    static void startScheduler();
 
     /// Wait for scan to run
-        void waitForScan();
+    void waitForScan();
 
-    private:
+private:
 
     // The semaphore that the scan task waits on
-        sem_t Sem;
+    sem_t Sem;
 
     // Mutex to protect the condition variables
-	pthread_mutex_t WaitMutex;
+    pthread_mutex_t WaitMutex;
 
     // Condition variables for signaling the start and end of the 
     // scan
-        pthread_cond_t ScanStart;
-        pthread_cond_t ScanEnd;
+    pthread_cond_t ScanStart;
+    pthread_cond_t ScanEnd;
 
     // Flags for synchonizing with the start and end of the scan.
-        bool StartFlag;
-        bool EndFlag;
+    bool StartFlag;
+    bool EndFlag;
 
     // The number of ticks between each run of the scan
-        int WaitTicks;
+    int WaitTicks;
 
     // The number of ticks since the scan last ran
-        int TickCount;
+    int TickCount;
 
-        static std::vector<void*> Tasks;
-        static bool RealTime;
-        static pthread_attr_t Tattr;
-        static void* scheduler( void* arg);
-        static void* startScan( void* scanTask);
+    static std::vector<void *> Tasks;
+    static bool RealTime;
+    static pthread_attr_t Tattr;
+
+    [[noreturn]] static void *scheduler(void *arg);
+
+    static void *startScan(void *scanTask);
 };
+
 #endif

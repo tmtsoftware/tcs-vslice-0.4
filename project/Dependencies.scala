@@ -32,6 +32,12 @@ object Dependencies {
     Libs.`scalatest` % Test
   )
 
+  val `tcs-client` = Seq(
+    CSW.`csw-framework`,
+    CSW.`csw-testkit` % Test,
+    Libs.`scalatest` % Test
+  )
+
   val TcsDeploy = Seq(
     CSW.`csw-framework`,
     CSW.`csw-testkit` % Test

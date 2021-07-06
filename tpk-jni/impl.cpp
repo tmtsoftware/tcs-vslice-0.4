@@ -15,7 +15,7 @@ namespace tpkJni {
     const double d2Mas = 60 * 60 * 1000;
 
     // CSW component prefix
-    const char *prefix = "TCS.pk";
+    const char *prefix = "TCS.PointingKernelAssembly";
 
     // The SlowScan class implements the "slow" loop of the application.
 
@@ -161,7 +161,9 @@ namespace tpkJni {
         }
     }
 
-    void TpkC::publishMcsDemand(double mAz, double mEl) {
+    // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
+    // Args are in degrees.
+    void TpkC::publishMcsDemand(double az, double el) {
         // trackID
         string trackIdAr[] = {"trackid-0"}; // TODO
         CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -169,22 +171,98 @@ namespace tpkJni {
 
         // pos
         CswAltAzCoord values[1];
-        values[0] = cswMakeAltAzCoord("BASE", lround(mAz * d2Mas), lround(mEl * d2Mas));
+        values[0] = cswMakeAltAzCoord("BASE", lround(az * d2Mas), lround(el * d2Mas));
         CswArrayValue arrayValues = {.values = values, .numValues = 1};
         CswParameter coordParam = cswMakeParameter("pos", AltAzCoordKey, arrayValues, csw_unit_NoUnits);
 
         // time
-        string timeAr[] = {"time-0"}; // TODO
+        CswUtcTime timeAr[] = {cswUtcTime()};
         CswArrayValue timeValues = {.values = timeAr, .numValues = 1};
         CswParameter timeParam = cswMakeParameter("time", UTCTimeKey, timeValues, csw_unit_NoUnits);
 
 
         // -- ParamSet
-        CswParameter params[] = {trackIdParam, coordParam};
+        CswParameter params[] = {trackIdParam, coordParam, timeParam};
         CswParamSet paramSet = {.params = params, .numParams = 3};
 
         // -- Event --
         CswEvent event = cswMakeEvent(SystemEvent, prefix, "MountDemandPosition", paramSet);
+
+        // -- Publish --
+        cswEventPublish(publisher, event);
+
+        // -- Cleanup --
+        cswFreeEvent(event);
+    }
+
+    // Publish a TCS.PointingKernelAssembly.EnclosureDemandPosition event to the CSW event service.
+    // base and cap are in degrees
+    void TpkC::publishEcsDemand(double base, double cap) {
+        // trackID
+        string trackIdAr[] = {"trackid-0"}; // TODO
+        CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
+        CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
+
+        // BasePosition
+        double baseAr[] = {base};
+        CswArrayValue baseValues = {.values = baseAr, .numValues = 1};
+        CswParameter baseParam = cswMakeParameter("BasePosition", DoubleKey, baseValues, csw_unit_degree);
+
+        // CapPosition
+        double capAr[] = {cap};
+        CswArrayValue calValues = {.values = capAr, .numValues = 1};
+        CswParameter capParam = cswMakeParameter("CapPosition", DoubleKey, calValues, csw_unit_degree);
+
+        // time
+        CswUtcTime timeAr[] = {cswUtcTime()};
+        CswArrayValue timeValues = {.values = timeAr, .numValues = 1};
+        CswParameter timeParam = cswMakeParameter("time", UTCTimeKey, timeValues, csw_unit_NoUnits);
+
+
+        // -- ParamSet
+        CswParameter params[] = {trackIdParam, baseParam, capParam, timeParam};
+        CswParamSet paramSet = {.params = params, .numParams = 4};
+
+        // -- Event --
+        CswEvent event = cswMakeEvent(SystemEvent, prefix, "EnclosureDemandPosition", paramSet);
+
+        // -- Publish --
+        cswEventPublish(publisher, event);
+
+        // -- Cleanup --
+        cswFreeEvent(event);
+    }
+
+    // Publish a TCS.PointingKernelAssembly.M3DemandPosition event to the CSW event service.
+    // rotation and tilt are in degrees
+    void TpkC::publishM3Demand(double rotation, double tilt) {
+        // trackID
+        string trackIdAr[] = {"trackid-0"}; // TODO
+        CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
+        CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
+
+        // RotationPosition
+        double rotationAr[] = {rotation};
+        CswArrayValue rotationValues = {.values = rotationAr, .numValues = 1};
+        CswParameter rotationParam = cswMakeParameter("RotationPosition", DoubleKey, rotationValues, csw_unit_degree);
+
+        // BasePosition
+        double tiltAr[] = {tilt};
+        CswArrayValue calValues = {.values = tiltAr, .numValues = 1};
+        CswParameter tiltParam = cswMakeParameter("TiltPosition", DoubleKey, calValues, csw_unit_degree);
+
+        // time
+        CswUtcTime timeAr[] = {cswUtcTime()};
+        CswArrayValue timeValues = {.values = timeAr, .numValues = 1};
+        CswParameter timeParam = cswMakeParameter("time", UTCTimeKey, timeValues, csw_unit_NoUnits);
+
+
+        // -- ParamSet
+        CswParameter params[] = {trackIdParam, rotationParam, tiltParam, timeParam};
+        CswParamSet paramSet = {.params = params, .numParams = 4};
+
+        // -- Event --
+        CswEvent event = cswMakeEvent(SystemEvent, prefix, "M3DemandPosition", paramSet);
 
         // -- Publish --
         cswEventPublish(publisher, event);
@@ -273,15 +351,10 @@ namespace tpkJni {
 #pragma clang diagnostic pop
     }
 
-//    void TpkC::_register(IDemandsCB *demandsNotify) {
-//        demandsNotifier = demandsNotify;
-//        if (demandsNotifier == nullptr) printf("Register failed\n");
-//    }
-
     // ra and dec are expected in degrees
     void TpkC::newTarget(double ra, double dec) {
+        publishDemands = true;
         tpk::ICRSTarget target(*site, ra * tpk::TcsLib::d2r, dec * tpk::TcsLib::d2r);
-        //tpk::ICRSTarget target(*site, "12 23 11 06 45 12");
         //
         // Set the mount and enclosure to the same target
         //

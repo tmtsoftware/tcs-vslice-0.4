@@ -24,7 +24,7 @@ include(${SWIG_USE_FILE})
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
 
-link_libraries(tinyxml tpk tcs slalib csw-shared m pthread)
+link_libraries(tpk tcs slalib tinyxml csw-shared m pthread)
 
 swig_add_library(${PROJECT_NAME}  LANGUAGE java  SOURCES
                 impl.cpp

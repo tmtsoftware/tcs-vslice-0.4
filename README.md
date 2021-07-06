@@ -7,7 +7,7 @@ TMT Common Software ([CSW](https://github.com/tmtsoftware/csw)) APIs.
 
 * tcs-tcsassembly - an assembly that talks to the tcs HCD
 * tcs-tcshcd - an HCD that talks to the tcs hardware
-* tcs-tcsdeploy - for starting/deploying HCDs and assemblies
+* tcs-deploy - for starting/deploying HCDs and assemblies
 
 ## Upgrading CSW Version
 
@@ -40,11 +40,11 @@ Run the container cmd script with arguments. For example:
 * Run the HCD in a standalone mode with a local config file (The standalone config format is different than the container format):
 
 ```
-sbt "tcs-tcsdeploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --standalone --local ./src/main/resources/TcshcdStandalone.conf"
+sbt "tcs-deploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --standalone --local ./src/main/resources/TcshcdStandalone.conf"
 ```
 
 * Start the HCD and assembly in a container using the Java implementations:
 
 ```
-sbt "tcs-tcsdeploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --local ./src/main/resources/JTcsContainer.conf"
+sbt "tcs-deploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --local ./src/main/resources/JTcsContainer.conf"
 ```

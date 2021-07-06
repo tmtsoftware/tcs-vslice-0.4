@@ -20,7 +20,7 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
   }
 
   test("Assembly should be locatable using Location Service") {
-    val connection   = AkkaConnection(ComponentId(Prefix("TCS.pk"), ComponentType.Assembly))
+    val connection   = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
     val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
 
     akkaLocation.connection shouldBe connection

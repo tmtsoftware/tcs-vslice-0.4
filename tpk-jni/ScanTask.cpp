@@ -20,21 +20,20 @@ using std::vector;
 // Definitions of static data members.
 bool ScanTask::RealTime = false;
 pthread_attr_t ScanTask::Tattr;
-vector<void*>ScanTask::Tasks;
+vector<void *>ScanTask::Tasks;
 
 /*
     The constructor stores the reference to to the semaphore, 
     initialises the semaphore and the mutexes and creates the 
     scan thread.
 */
-ScanTask::ScanTask( int waitticks, int prio) : 
-        WaitTicks(waitticks), TickCount(0)
-{
+ScanTask::ScanTask(int waitticks, int prio) :
+        WaitTicks(waitticks), TickCount(0) {
 
 // Initialise the semaphore (not shared between processes and 
 // initially zero so that the thread is blocked).
-    int ierr = sem_init( &Sem, 0, 0);
-    if ( ierr ) perror( "sem_init" );
+    int ierr = sem_init(&Sem, 0, 0);
+    if (ierr) perror("sem_init");
 
 // Initialise the mutex used for waiting for the scan to run.
     WaitMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -44,20 +43,20 @@ ScanTask::ScanTask( int waitticks, int prio) :
     ScanEnd = PTHREAD_COND_INITIALIZER;
 
 // Create the scan thread.
-    if ( RealTime ) {
-        struct sched_param sched;
-        sched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 
-                prio;
-        if (pthread_attr_setschedparam( &Tattr, &sched))
-                perror( "pthread_attr_setschedparam" );
+    if (RealTime) {
+        struct sched_param sched{};
+        sched.sched_priority = sched_get_priority_max(SCHED_FIFO) -
+                               prio;
+        if (pthread_attr_setschedparam(&Tattr, &sched))
+            perror("pthread_attr_setschedparam");
     }
     pthread_t threadId;
     if (pthread_create(&threadId, &Tattr, startScan, this))
-            perror( "pthread_create" );
+        perror("pthread_create");
 
-// Add ourself to the list of scan tasks.
+    // Add ourself to the list of scan tasks.
     Tasks.push_back(this);
-};
+}
 
 /*
    This procedure attempts to make the process a real-time process 
@@ -92,98 +91,94 @@ void ScanTask::makeRealTime() {
 
 // This is the thread start routine for the scheduler thread.
 
-extern "C" void* ScanTask::scheduler( void* )
-{
+extern "C" [[noreturn]] void *ScanTask::scheduler(void *) {
 
 // Loop forever.
     for (;;) {
 
-   // For each scan task...
-        for ( vector<void*>::const_iterator t = Tasks.begin();
-                t != Tasks.end(); ++t) {
-            ScanTask* task = static_cast<ScanTask*>(*t);
+        // For each scan task...
+        for (auto Task : Tasks) {
+            auto *task = static_cast<ScanTask *>(Task);
 
-        // If the counter has reached zero...
-            if ( task->TickCount == 0 ) {
+            // If the counter has reached zero...
+            if (task->TickCount == 0) {
 
-            // Reset the counter to the number of ticks to wait.
+                // Reset the counter to the number of ticks to wait.
                 task->TickCount = task->WaitTicks;
 
-            // Post the semaphore to release the scan.
-               (void) sem_post( &task->Sem );
+                // Post the semaphore to release the scan.
+                (void) sem_post(&task->Sem);
 
             }
 
-        // Decrement the counter
+            // Decrement the counter
             --(task->TickCount);
         }
 
-    // Wait for the one tick (10ms)
-        struct timespec interval;
+        // Wait for the one tick (10ms)
+        struct timespec interval{};
         interval.tv_sec = 0;
         interval.tv_nsec = 1000000;
         while (nanosleep(&interval, &interval) != 0) {
             if (errno == EINTR) continue;
             perror("nanosleep");
-        };
+        }
     }
-    return 0;
+//    return nullptr;
 }
 
 //   Starts the scheduler thread.
 
-void ScanTask::startScheduler()
-{
+void ScanTask::startScheduler() {
 
 // Create the scheduler thread with the highest possible priority.
-    if ( RealTime ) {
-        struct sched_param sched;
+    if (RealTime) {
+        struct sched_param sched{};
         sched.sched_priority = sched_get_priority_max(SCHED_FIFO);
-        int ierr = pthread_attr_setschedparam( &Tattr, &sched);
-        if ( ierr ) perror( "pthread_attr_setschedparam" );
+        int ierr = pthread_attr_setschedparam(&Tattr, &sched);
+        if (ierr) perror("pthread_attr_setschedparam");
     }
     pthread_t threadId;
-    int ierr = pthread_create(&threadId, &Tattr, scheduler, 0);
-    if ( ierr ) perror( "pthread_create" );
+    int ierr = pthread_create(&threadId, &Tattr, scheduler, nullptr);
+    if (ierr) perror("pthread_create");
 }
 
 
 // Start is called by the thread start routine and never returns.
 
-void ScanTask::start() 
-{
+[[noreturn]] void ScanTask::start() {
 
 // Loop forever.
     for (;;) {
 
-    // Wait for the semaphore to be released.
+        // Wait for the semaphore to be released.
         (void) sem_wait(&Sem);
 
-    // Signal that the scan has started.
+        // Signal that the scan has started.
         pthread_mutex_lock(&WaitMutex);
         StartFlag = true;
         pthread_cond_signal(&ScanStart);
         pthread_mutex_unlock(&WaitMutex);
 
-    // Call the action routine.
+        // Call the action routine.
         scan();
 
-    // Signal that the scan has ended
+        // Signal that the scan has ended
         pthread_mutex_lock(&WaitMutex);
         EndFlag = true;
         pthread_cond_signal(&ScanEnd);
         pthread_mutex_unlock(&WaitMutex);
 
-}
+    }
 }
 
 // This is a thread start routine which must have C linkage. It just 
 // calls the start method of the Scan object pointed to by its 
 // argument. 
 
-extern "C" void *ScanTask::startScan( void* scanTask) {
-    (static_cast<ScanTask*>(scanTask))->start();
-    return 0;
+extern "C" void *ScanTask::startScan(void *scanTask) {
+    (static_cast<ScanTask *>(scanTask))->start();
+//    return nullptr;
 }
 
 void ScanTask::waitForScan() {
