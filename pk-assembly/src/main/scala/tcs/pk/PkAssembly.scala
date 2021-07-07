@@ -22,12 +22,6 @@ class PkAssemblyBehaviorFactory extends ComponentBehaviorFactory {
     new PkAssemblyHandlers(ctx, cswCtx)
 }
 
-//object PkAssemblyHandlers {
-//  // Key to get the position value from a command
-//  // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
-//  private val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
-//}
-
 class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext) extends ComponentHandlers(ctx, cswCtx) {
 
   import cswCtx._
