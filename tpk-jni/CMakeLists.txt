@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
+project(tpk-jni LANGUAGES CXX VERSION 0.1)
 set(CMAKE_C_STANDARD 17)
-#enable_language(C)
 enable_language(CXX)
 
 set(DEFAULT_BUILD_TYPE "Release")
@@ -17,12 +17,9 @@ include(GNUInstallDirs)
 # Edit this to point to the top level TPK project source
 set(INCLUDE_DIR /usr/local/include)
 
-project(tpk-jni LANGUAGES CXX VERSION 0.1)
 include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
-
-link_libraries(tpk tcs slalib tinyxml csw-shared m pthread)
 
 add_library(${PROJECT_NAME} SHARED
         swig_wrap.cxx
@@ -31,7 +28,15 @@ add_library(${PROJECT_NAME} SHARED
         ScanTask.cpp
         ScanTask.h)
 
-install(TARGETS ${PROJECT_NAME} EXPORT MyLibConfig
+target_link_libraries(${PROJECT_NAME} tpk tcs slalib tinyxml csw m pthread)
+
+# set LINK_WHAT_YOU_USE to true so that dependent libs are not stripped away for optimization!
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        LINK_WHAT_YOU_USE "TRUE"
+        PUBLIC_HEADER interface.h
+        SOVERSION 1)
+
+install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

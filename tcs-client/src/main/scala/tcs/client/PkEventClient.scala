@@ -43,7 +43,7 @@ object PkEventClient extends App {
   implicit val timeout: Timeout    = Timeout(10.seconds)
   private val obsId                = ObsId("2021A-001-123")
   private val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
-  private val prefix               = Prefix("TCS.pk-event-client")
+  private val prefix               = Prefix("TCS.pk_event_client")
   private val commandName          = CommandName("SlewToTarget")
 
   // TODO: specify command/coords via command line args

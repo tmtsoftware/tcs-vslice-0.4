@@ -2,9 +2,9 @@
 
 #include <cstdio>
 #include <iostream>
-#include <csw/csw.h>
 #include "tpk/tpk.h"
 #include "ScanTask.h"
+#include "csw/csw.h"
 
 // Used to access a limited set of TPK functions from Scala/Java
 class TpkC {

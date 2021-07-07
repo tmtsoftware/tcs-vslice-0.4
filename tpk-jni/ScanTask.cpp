@@ -4,13 +4,13 @@
 // D L Terrett
 // Copyright STFC All Rights Reserved
 
-#include <errno.h>
+#include <cerrno>
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/mman.h>
-#include <time.h>
+#include <ctime>
 #include <unistd.h>
 #include <vector>
 #include "ScanTask.h"
