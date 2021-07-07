@@ -45,6 +45,7 @@ lazy val `pk-assembly` = project
 
 // Test client
 lazy val `tcs-client` = project
+  .enablePlugins(CswBuildInfo, DeployApp)
   .settings(
     libraryDependencies ++= Dependencies.`tcs-client`
   )

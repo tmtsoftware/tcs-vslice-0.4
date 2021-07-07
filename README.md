@@ -1,50 +1,47 @@
-# tcs
+# TCS Vertical Slice Demo
 
-This project implements an HCD (Hardware Control Daemon) and an Assembly using
-TMT Common Software ([CSW](https://github.com/tmtsoftware/csw)) APIs.
+*Note: This project is still in early development.*
 
-## Subprojects
+This project contains demo CSW assemblies and test client code based on the TCS API
+as defined the the [ICD Database](https://github.com/tmtsoftware/icd).
 
-* tcs-tcsassembly - an assembly that talks to the tcs HCD
-* tcs-tcshcd - an HCD that talks to the tcs hardware
-* tcs-deploy - for starting/deploying HCDs and assemblies
+It makes use of the Scala based CSW framework, and also links with native C/C++ code.
+For example, the pk (Pointing Kernel) assembly receives a `SlewToTarget` command and then
+makes a call to C/C++ code that then posts events using the [CSW C API](https://github.com/tmtsoftware/csw-c).
 
-## Upgrading CSW Version
+At this early point, the only code subscribing to those events is in the [tcs-client](tcs-client) subproject.
+It is planned to add a web app at some point to receive those events over the [ESW](https://github.com/tmtsoftware/esw) gateway
+and display information, graphics or image, etc.
 
-`project/build.properties` file contains `csw.version` property which indicates CSW version number.
-Updating `csw.version` property will make sure that CSW services as well as library dependency for HCD and Assembly modules are using same CSW version.
+## Dependencies
 
-## Build Instructions
+Currently this project requires that a number of shared libraries are installed in /usr/local/lib,
+which must also be defined (on Linux) in the LD_LIBRARY_PATH environment variable.
+The location is currently hard-coded, but that will soon be changed.
 
-The build is based on sbt and depends on libraries generated from the
-[csw](https://github.com/tmtsoftware/csw) project.
+Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
+First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid).
 
-See [here](https://www.scala-sbt.org/1.0/docs/Setup.html) for instructions on installing sbt.
+* [TPK (branch: add-cmake-files)](https://github.com/tmtsoftware/TPK/tree/add-cmake-files)
 
-## Prerequisites for running Components
+* [CSW C API (csw-c)](https://github.com/tmtsoftware/csw-c)
 
-The CSW services need to be running before starting the components.
-This is done by starting the `csw-services.sh` script which is present inside `scripts` directory.
-Follow below instructions to run CSW services:
+* [tpk-jni (a C/C++ based subproject of this project)](tpk-jni)
 
-* Run `./scripts/csw-services.sh start` command to start all the CSW services i.e. Location, Config, Event, Alarm and Database Service
-* Run `./csw_services.sh start --help` to get more information.
+## Running the pk assembly
 
-Note:
-`csw-services.sh` script reads `csw.version` property from `project/build.properties` file and uses that version for starting CSW services.
+To run the pk assembly, run: 
+    
+    csw-services start  # Note: Make sure you are using the version for csw-4.0.0-M1 or greater
 
-## Running the HCD and Assembly
+    sbt stage
 
-Run the container cmd script with arguments. For example:
+    ./target/universal/stage/bin/tcs-deploy --local ./tcs-deploy/src/main/resources/PkContainer.conf
 
-* Run the HCD in a standalone mode with a local config file (The standalone config format is different than the container format):
+To see the events being fired from the C/C++ code, you can run the pk-event-client:
 
-```
-sbt "tcs-deploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --standalone --local ./src/main/resources/TcshcdStandalone.conf"
-```
+    pk-event-client
 
-* Start the HCD and assembly in a container using the Java implementations:
 
-```
-sbt "tcs-deploy/runMain tcs.tcsdeploy.TcsContainerCmdApp --local ./src/main/resources/JTcsContainer.conf"
-```
+
+    

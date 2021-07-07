@@ -33,7 +33,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   import cswCtx._
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
-  private val tpkWrapper: TpkWrapper = new TpkWrapper()
+  private val tpkWrapper: TpkWrapper        = new TpkWrapper()
 
   // Key to get the position value from a command
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
@@ -44,18 +44,19 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
    * New Target and Offset requests can be passed on to it
    */
   private def initiateTpkEndpoint(): Unit = {
-        new Thread(new Runnable() {
-          override def run(): Unit = {
-            tpkWrapper.initiate()
-          }
-        }).start()
+    new Thread(new Runnable() {
+      override def run(): Unit = {
+        tpkWrapper.initiate()
+      }
+    }).start()
   }
 
   override def initialize(): Unit = {
     log.info("Initializing pk assembly...")
     try {
       initiateTpkEndpoint()
-    } catch {
+    }
+    catch {
       case ex: Exception => log.error("Failed to initialize native code", ex = ex)
     }
   }
