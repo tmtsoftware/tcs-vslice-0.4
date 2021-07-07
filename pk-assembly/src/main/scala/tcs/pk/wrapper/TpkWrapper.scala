@@ -15,7 +15,7 @@ import csw.params.core.models.Coords.EqCoord
 class TpkWrapper() {
 //  System.loadLibrary("tpk-jni")
   System.load("/usr/local/lib/libtpk-jni.so")
-  private val tpkEndpoint = new TpkC
+  private val tpkEndpoint = new TpkC()
 
   /**
    * This will help registering and Initializing TPK, once this method is

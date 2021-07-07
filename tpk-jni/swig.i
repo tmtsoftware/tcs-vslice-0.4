@@ -1,12 +1,10 @@
-/* File : Swig.i */
-%module(directors="1") tpkJni
+/* File : swig.i */
+%module tpkJni
 
 %{
-  #include "interface.h"
+  #include "c-interface.h"
 %}
-
-/* turn on director wrapping Callback */
-%feature("director") IDemandsCB;
 
 /* Let's just grab the original header file here */
 %include "interface.h"
+

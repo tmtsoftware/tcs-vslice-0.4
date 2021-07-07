@@ -10,9 +10,9 @@ namespace tpkJni {
     // Used to access a limited set of TPK functions from Scala/Java
     class TpkC {
     public:
-        TpkC() { printf("TpkC::TpkC()\n"); }
+        TpkC();
 
-        ~TpkC() { printf("TpkC::TpkC()\n"); }
+        ~TpkC();
 
         void init();
 
@@ -27,10 +27,10 @@ namespace tpkJni {
         void publishEcsDemand(double base, double cap);
         void publishM3Demand(double rotation, double tilt);
 
-        tpk::TmtMountVt *mount = nullptr;
-        tpk::TmtMountVt *enclosure = nullptr;
-        tpk::Site *site = nullptr;
-        CswEventServiceContext publisher = nullptr;
+        tpk::TmtMountVt *mount;
+        tpk::TmtMountVt *enclosure;
+        tpk::Site *site;
+        CswEventServiceContext publisher;
         bool publishDemands = false;
     };
 }

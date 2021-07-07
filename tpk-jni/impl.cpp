@@ -109,6 +109,11 @@ namespace tpkJni {
         };
     };
 
+    TpkC::TpkC() { printf("TpkC::TpkC()\n"); }
+
+    TpkC::~TpkC() { printf("TpkC::TpkC()\n"); }
+
+
     // Allan: Args are the mount az, el and M3 demands in degrees
     void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, double m3Rotation,
                           double m3Tilt) {
