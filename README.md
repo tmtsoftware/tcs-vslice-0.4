@@ -15,12 +15,11 @@ and display information, graphics or image, etc.
 
 ## Dependencies
 
-Currently this project requires that a number of shared libraries are installed in /usr/local/lib,
-which must also be defined (on Linux) in the LD_LIBRARY_PATH environment variable.
-The location is currently hard-coded, but that will soon be changed.
+Currently this project requires that a number of shared libraries are installed in a known location (default: /usr/local/lib),
+which must also be included (on Linux) in the LD_LIBRARY_PATH environment variable.
 
 Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
-First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid).
+First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid). You can also use `make PREFIX=/my/dir` to change the installation directory.
 
 * [TPK (branch: add-cmake-files)](https://github.com/tmtsoftware/TPK/tree/add-cmake-files)
 
