@@ -9,7 +9,7 @@ import csw.params.core.models.Coords.EqCoord
  *
  */
 class TpkWrapper() {
-  System.loadLibrary("tpk-jni")
+//  System.loadLibrary("tpk-jni")
   private val tpkEndpoint = new TpkC()
 
   /**

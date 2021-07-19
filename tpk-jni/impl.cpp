@@ -167,7 +167,7 @@ void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, do
 // Args are in degrees.
 void TpkC::publishMcsDemand(double az, double el) {
     // trackID
-    const char* trackIdAr[] = {"trackid-0"}; // TODO
+    const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
     CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
 
@@ -201,7 +201,7 @@ void TpkC::publishMcsDemand(double az, double el) {
 // base and cap are in degrees
 void TpkC::publishEcsDemand(double base, double cap) {
     // trackID
-    const char* trackIdAr[] = {"trackid-0"}; // TODO
+    const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
     CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
 
@@ -239,7 +239,7 @@ void TpkC::publishEcsDemand(double base, double cap) {
 // rotation and tilt are in degrees
 void TpkC::publishM3Demand(double rotation, double tilt) {
     // trackID
-    const char* trackIdAr[] = {"trackid-0"}; // TODO
+    const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
     CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
 
@@ -372,5 +372,4 @@ void TpkC::offset(double raO, double decO) {
             raO * as2r, decO * as2r), tpk::ICRefSys());
     mount->setOffset(*offset);
 }
-
 

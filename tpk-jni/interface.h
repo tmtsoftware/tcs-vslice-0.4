@@ -6,6 +6,7 @@
 #include "ScanTask.h"
 #include "csw/csw.h"
 
+
 // Used to access a limited set of TPK functions from Scala/Java
 class TpkC {
 public:
