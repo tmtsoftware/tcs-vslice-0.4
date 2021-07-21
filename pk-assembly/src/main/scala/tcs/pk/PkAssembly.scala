@@ -27,7 +27,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   import cswCtx._
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
-  private val tpkc: TpkC              = TpkC.getInstance()
+  private val tpkc: TpkC                    = TpkC.getInstance()
 
   // Key to get the position value from a command
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
