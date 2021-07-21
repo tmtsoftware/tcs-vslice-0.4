@@ -1,36 +1,39 @@
 package tcs.pk.wrapper;
 
-import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.annotation.*;
+import jnr.ffi.LibraryLoader;
+import jnr.ffi.Pointer;
 
-@Platform(
-    includepath = {"/usr/local/include/"},
-    linkpath = {"/usr/local/lib/"},
-    include = {"tpk-jni/interface.h"},
-    link = {"tpk-jni"}
+public class TpkC {
+  private final TpkExternC tpkExternC;
+  private final Pointer self;
 
-)
-public class TpkC extends Pointer {
-  static {
-    try {
-      Loader.load();
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
+  TpkC(TpkExternC tpkExternC, Pointer self) {
+    this.tpkExternC = tpkExternC;
+    this.self = self;
   }
 
-  public TpkC() {
-    allocate();
+  public void init() {
+    tpkExternC.tpkc_init(self);
   }
 
-  private native void allocate();
+  public void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
+    tpkExternC.tpkc_newDemands(self, mAz, mEl, eAz, eEl, m3R, m3T);
+  }
 
-  // to call the getter and setter functions
-  public native void init();
+  public void newTarget(double ra, double dec) {
+    tpkExternC.tpkc_newTarget(self, ra, dec);
+  }
 
-  public native void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T);
+  public void offset(double raO, double decO) {
+    tpkExternC.tpkc_offset(self, raO, decO);
+  }
 
-  public native void newTarget(double ra, double dec);
-
-  public native void offset(double raO, double decO);
+  /**
+   * Gets a new instance of the TpkC C class, using this interface
+   */
+  public static TpkC getInstance() {
+    TpkExternC tpkExternC = LibraryLoader.create(TpkExternC.class).load("tpk-jni");
+    Pointer self = tpkExternC.tpkc_ctor();
+    return new TpkC(tpkExternC, self);
+  }
 }

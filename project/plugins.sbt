@@ -5,7 +5,6 @@ addSbtPlugin("org.scoverage"    % "sbt-scoverage"       % "1.8.2")
 addSbtPlugin("com.eed3si9n"     % "sbt-buildinfo"       % "0.10.0")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates"         % "0.5.3")
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.5")
-addSbtPlugin("org.bytedeco"     % "sbt-javacpp"         % "1.17")
 
 classpathTypes += "maven-plugin"
 

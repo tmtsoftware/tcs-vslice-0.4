@@ -1,4 +1,4 @@
-#include "interface.h"
+#include "TpkC.h"
 
 #include <ctime>
 #include "tpk/UnixClock.h"
@@ -373,3 +373,26 @@ void TpkC::offset(double raO, double decO) {
     mount->setOffset(*offset);
 }
 
+// --- This provides access from C, to make it easier to access from Java ---
+
+extern "C" TpkC *tpkc_ctor() {
+    return new TpkC();
+}
+
+extern "C" void tpkc_init(TpkC *self) {
+    self->init();
+}
+
+extern "C" void tpkc_newDemands(TpkC *self, double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
+    self->newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
+}
+
+extern "C" void tpkc_newTarget(TpkC *self, double ra, double dec) {
+    self->newTarget(ra, dec);
+}
+
+extern "C" void tpkc_offset(TpkC *self, double raO, double decO) {
+    self->offset(raO, decO);
+}
+
+// ---

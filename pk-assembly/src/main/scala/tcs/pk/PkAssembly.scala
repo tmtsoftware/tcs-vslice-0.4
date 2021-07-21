@@ -9,11 +9,11 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqCoord
 import csw.params.core.models.{Angle, Id}
 import csw.time.core.models.UTCTime
-import tcs.pk.wrapper.TpkWrapper
 
 import scala.concurrent.ExecutionContextExecutor
 import csw.params.commands.CommandResponse.{Accepted, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand}
+import tcs.pk.wrapper.TpkC
 
 // --- Demo implementation of parts of the TCS pk assembly ---
 
@@ -27,7 +27,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   import cswCtx._
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
-  private val tpkWrapper: TpkWrapper        = new TpkWrapper()
+  private val tpkc: TpkC              = TpkC.getInstance()
 
   // Key to get the position value from a command
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
@@ -40,7 +40,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   private def initiateTpkEndpoint(): Unit = {
     new Thread(new Runnable() {
       override def run(): Unit = {
-        tpkWrapper.initiate()
+        tpkc.init()
       }
     }).start()
   }
@@ -68,7 +68,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
           val pos    = controlCommand.paramType.get(posKey).map(_.head).get
           val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
           log.info(s"pk assembly: SlewToTarget $posStr")
-          tpkWrapper.newTarget(pos)
+          tpkc.newTarget(pos.ra.toDegree, pos.dec.toDegree)
           log.info(s"XXX pk assembly: after newTarget call")
           CommandResponse.Completed(runId)
         }

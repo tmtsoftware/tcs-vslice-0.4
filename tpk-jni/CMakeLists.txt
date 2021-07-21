@@ -22,9 +22,8 @@ find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
 
 add_library(${PROJECT_NAME} SHARED
-        swig_wrap.cxx
-        impl.cpp
-        interface.h
+        TpkC.cpp
+        TpkC.h
         ScanTask.cpp
         ScanTask.h)
 
@@ -33,7 +32,7 @@ target_link_libraries(${PROJECT_NAME} tpk tcs slalib tinyxml csw m pthread)
 # set LINK_WHAT_YOU_USE to true so that dependent libs are not stripped away for optimization!
 set_target_properties(${PROJECT_NAME} PROPERTIES
         LINK_WHAT_YOU_USE "TRUE"
-        PUBLIC_HEADER interface.h
+        PUBLIC_HEADER TpkC.h
         SOVERSION 1)
 
 install(TARGETS ${PROJECT_NAME}

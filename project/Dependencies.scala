@@ -4,6 +4,7 @@ object Dependencies {
 
   val `pk-assembly` = Seq(
     CSW.`csw-framework`,
+    Libs.`jnr-ffi`,
     CSW.`csw-testkit` % Test,
     Libs.`scalatest` % Test
   )
