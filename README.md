@@ -39,7 +39,7 @@ To run the pk assembly, run:
 
 To see the events being fired from the C/C++ code, you can run the pk-event-client:
 
-    pk-event-client
+    ./target/universal/stage/bin/pk-event-client
 
 
 

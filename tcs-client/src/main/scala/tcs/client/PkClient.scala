@@ -16,7 +16,7 @@ import csw.params.core.models.Coords.EqCoord
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.{ObsId, ProperMotion}
 import csw.prefix.models.Prefix
-import csw.prefix.models.Subsystem.{CSW, TCS}
+import csw.prefix.models.Subsystem.TCS
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
