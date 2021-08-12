@@ -106,9 +106,21 @@ public:
     };
 };
 
-TpkC::TpkC() { printf("TpkC::TpkC()\n"); }
+TpkC::TpkC() {
+    time = nullptr;
+    site = nullptr;
+    publisher = nullptr;
+    mount = nullptr;
+    enclosure = nullptr;
+}
 
-TpkC::~TpkC() { printf("TpkC::TpkC()\n"); }
+TpkC::~TpkC() {
+    delete time;
+    delete site;
+    cswEventPublisherClose(publisher);
+    delete mount;
+    delete enclosure;
+}
 
 
 // Allan: Args are the mount az, el and M3 demands in degrees
@@ -117,7 +129,7 @@ void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, do
     // Allan: Taken from the TPK_POC java callback code (Here we post an event instead of using the callback)
     double ci = 32.5;
     double ciz = 90 - ci;
-    double phir = M_PI * ci / 180;
+//    double phir = M_PI * ci / 180;
     double tci = tan(ci);
     double cci = cos(ci);
     double PI2 = M_PI * 2;
@@ -275,7 +287,6 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
 
 
 void TpkC::init() {
-
     // Set up standard out so that it formats double with the maximum precision.
     cout.precision(14);
     cout.setf(std::ios::showpoint);
@@ -284,7 +295,7 @@ void TpkC::init() {
     tpk::UnixClock clock(
             37.0            // Assume that the system clock is st to UTC.
             // TAI-UTC is 37 sec at the time of writing
-    );
+            );
 
     // and a Site...
     site = new tpk::Site(clock.read(),
@@ -295,13 +306,13 @@ void TpkC::init() {
                          19.82900194,     // Latitude (for Hawaii)
                          4160,            // Height (metres) (for Hawaii)
                          0.1611, 0.4475   // Polar motions (arcsec)
-    );
+                         );
 
     // Get an object for publishing CSW events
     publisher = cswEventPublisherInit();
 
     // and a "time keeper"...
-    tpk::TimeKeeper time(clock, *site);
+    time = new tpk::TimeKeeper(clock, *site);
 
     // Create a transformation that converts mm to radians for a 450000.0mm	 focal length.
     tpk::AffineTransform transf(0.0, 0.0, 1.0 / 450000.0, 0.0);
@@ -309,9 +320,9 @@ void TpkC::init() {
     // Create mount and enclosure virtual telescopes.
     // M3 comes automatically with TmtMountVt
 
-    mount = new tpk::TmtMountVt(time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
+    mount = new tpk::TmtMountVt(*time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
                                 tpk::ICRefSys());
-    enclosure = new tpk::TmtMountVt(time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
+    enclosure = new tpk::TmtMountVt(*time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
                                     tpk::ICRefSys());
 
     // Create and install a pointing model. In a real system this would be initialised from a file.
@@ -319,18 +330,16 @@ void TpkC::init() {
     mount->newPointingModel(model);
     enclosure->newPointingModel(model);
 
-    // Make ourselves a real-time process if we have the privilege.
+   // Make ourselves a real-time process if we have the privilege.
     ScanTask::makeRealTime();
 
     // Create the slow, medium and fast threads.
-    SlowScan slow(time, *site);
+    SlowScan slow(*time, *site);
     MediumScan medium(*mount, *enclosure);
-    FastScan fast(this, time, *mount, *enclosure);
+    FastScan fast(this, *time, *mount, *enclosure);
 
     // Start the scheduler thread.
     ScanTask::startScheduler();
-
-
 
     // Set the field orientation.
     mount->setPai(0.0, tpk::ICRefSys());

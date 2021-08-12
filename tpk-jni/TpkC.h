@@ -14,6 +14,10 @@ public:
 
     ~TpkC();
 
+    // Disable copy
+    TpkC(TpkC const&) = delete;
+    TpkC& operator=(TpkC const&) = delete;
+
     void init();
 
     void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T);
@@ -29,6 +33,7 @@ private:
 
     void publishM3Demand(double rotation, double tilt);
 
+    tpk::TimeKeeper* time;
     tpk::TmtMountVt *mount;
     tpk::TmtMountVt *enclosure;
     tpk::Site *site;
