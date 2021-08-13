@@ -5,14 +5,15 @@ import csw.command.client.messages.TopLevelActorMessage
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.TrackingEvent
+import csw.params.commands.CommandIssue.{MissingKeyIssue, UnsupportedCommandIssue, WrongInternalStateIssue}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqCoord
 import csw.params.core.models.{Angle, Id}
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.ExecutionContextExecutor
-import csw.params.commands.CommandResponse.{Accepted, SubmitResponse, ValidateCommandResponse}
-import csw.params.commands.{CommandName, CommandResponse, ControlCommand}
+import csw.params.commands.CommandResponse.{Accepted, Invalid, SubmitResponse, ValidateCommandResponse}
+import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Observe, Setup}
 import tcs.pk.wrapper.TpkC
 
 // --- Demo implementation of parts of the TCS pk assembly ---
@@ -57,15 +58,47 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {}
 
-  override def validateCommand(runId: Id, controlCommand: ControlCommand): ValidateCommandResponse = Accepted(runId)
+  override def validateCommand(runId: Id, command: ControlCommand): ValidateCommandResponse = {
+    command match {
+      case setup: Setup =>
+        setup.commandName match {
+          case "SlewToTarget" =>
+            validateSlewToTarget(runId, setup)
+          case x =>
+            Invalid(runId, UnsupportedCommandIssue(s"Command: $x is not supported for TCS pk Assembly."))
+        }
+      case _ =>
+        Invalid(runId, UnsupportedCommandIssue(s"Command: ${command.commandName.name} is not supported for TCS pk Assembly."))
+    }
+  }
 
-  override def onSubmit(runId: Id, controlCommand: ControlCommand): SubmitResponse = {
-    log.debug(s"PkAssemblyHandlers: onSubmit($runId, $controlCommand)")
+  private def validateSlewToTarget(runId: Id, setup: Setup): ValidateCommandResponse = {
+    if (!isOnline) {
+      Invalid(runId, WrongInternalStateIssue("Can't slew to target: pk assembly is offline"))
+    }
+    else if (!setup.exists(posKey) && setup(posKey).size > 0) {
+      Invalid(runId, MissingKeyIssue(s"required SlewToTarget command key: $posKey is missing."))
+    }
+    else {
+      Accepted(runId)
+    }
+  }
 
-    controlCommand.commandName match {
+  override def onSubmit(runId: Id, command: ControlCommand): SubmitResponse = {
+    log.debug(s"PkAssemblyHandlers: onSubmit($runId, $command)")
+    command match {
+      case s: Setup => onSetup(runId, s)
+      case _: Observe =>
+        Invalid(runId, UnsupportedCommandIssue("Observe commands not supported"))
+    }
+  }
+
+  private def onSetup(runId: Id, setup: Setup): SubmitResponse = {
+    setup.commandName match {
+      // XXX TODO FIXME: tcs-vslice-0.3 had "setTarget" here: The ICD database has other commands...
       case CommandName("SlewToTarget") =>
         if (isOnline) {
-          val pos    = controlCommand.paramType.get(posKey).map(_.head).get
+          val pos    = setup(posKey).head
           val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
           log.info(s"pk assembly: SlewToTarget $posStr")
           tpkc.newTarget(pos.ra.toDegree, pos.dec.toDegree)
@@ -73,10 +106,10 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
           CommandResponse.Completed(runId)
         }
         else {
-          CommandResponse.Error(runId, s"Can't slew to target: pk assembly is offline")
+          CommandResponse.Error(runId, "Can't slew to target: pk assembly is offline")
         }
       case _ =>
-        CommandResponse.Error(runId, s"Unsupported pk assembly command: ${controlCommand.commandName}")
+        CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
     }
   }
 

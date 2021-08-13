@@ -107,6 +107,7 @@ public:
 };
 
 TpkC::TpkC() {
+    // These fields are initialized in init()
     time = nullptr;
     site = nullptr;
     publisher = nullptr;
