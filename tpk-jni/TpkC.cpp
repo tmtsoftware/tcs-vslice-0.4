@@ -4,8 +4,8 @@
 #include "tpk/UnixClock.h"
 #include "csw/csw.h"
 
-// multiply to convert degrees to milliarcseconds
-const double d2Mas = 60 * 60 * 1000;
+// multiply to convert degrees to microarcseconds
+const double d2Mas = 60.0 * 60.0 * 1000.0 * 1000.0;
 
 // CSW component prefix
 const char *prefix = "TCS.PointingKernelAssembly";
@@ -82,7 +82,7 @@ private:
         double tEl = mount.pitch() / tpk::TcsLib::d2r;
 
         double m3R = mount.m3Azimuth() / tpk::TcsLib::d2r;
-        double m3T = 90 - (mount.m3Elevation() / tpk::TcsLib::d2r);
+        double m3T = 90.0 - (mount.m3Elevation() / tpk::TcsLib::d2r);
 
         // Get the enclosure az, el demands in degrees.
         double eAz = 180.0 - (enclosure.roll() / tpk::TcsLib::d2r);
@@ -125,7 +125,7 @@ void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, do
                       double m3Tilt) {
     // Allan: Taken from the TPK_POC java callback code (Here we post an event instead of using the callback)
     double ci = 32.5;
-    double ciz = 90 - ci;
+    double ciz = 90.0 - ci;
 //    double phir = M_PI * ci / 180;
     double tci = tan(ci);
     double cci = cos(ci);
@@ -175,6 +175,7 @@ void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, do
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
 // Args are in degrees.
 void TpkC::publishMcsDemand(double az, double el) {
+    printf("publishMcsDemand %f, %f\n", az, el);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -209,6 +210,7 @@ void TpkC::publishMcsDemand(double az, double el) {
 // Publish a TCS.PointingKernelAssembly.EnclosureDemandPosition event to the CSW event service.
 // base and cap are in degrees
 void TpkC::publishEcsDemand(double base, double cap) {
+    printf("publishEcsDemand %f, %f\n", base, cap);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -247,6 +249,7 @@ void TpkC::publishEcsDemand(double base, double cap) {
 // Publish a TCS.PointingKernelAssembly.M3DemandPosition event to the CSW event service.
 // rotation and tilt are in degrees
 void TpkC::publishM3Demand(double rotation, double tilt) {
+    printf("publishM3Demand %f, %f\n", rotation, tilt);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -360,6 +363,8 @@ void TpkC::newTarget(double ra, double dec) {
     //
     mount->newTarget(target);
     enclosure->newTarget(target);
+
+    printf("XXX TpkC::newTarget %f, %f\n", ra, dec);
 }
 
 void TpkC::offset(double raO, double decO) {

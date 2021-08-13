@@ -13,7 +13,7 @@ import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.Setup
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqCoord
-import csw.params.core.models.ProperMotion
+import csw.params.core.models.{Angle, ProperMotion}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 
@@ -58,6 +58,7 @@ object PkClient extends App {
       val posParam = posKey.set(
         eqCoord
       )
+      log.info(s"XXX Using coords: ${Angle.raToString(eqCoord.ra.toRadian)}, ${Angle.deToString(eqCoord.dec.toRadian)}")
       Setup(prefix, commandName, Some(obsId)).add(posParam)
     }
 
