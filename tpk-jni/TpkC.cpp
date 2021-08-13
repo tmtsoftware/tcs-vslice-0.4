@@ -4,10 +4,6 @@
 #include "tpk/UnixClock.h"
 #include "csw/csw.h"
 
-using std::cin;
-using std::cout;
-using std::endl;
-
 // multiply to convert degrees to milliarcseconds
 const double d2Mas = 60 * 60 * 1000;
 
@@ -288,15 +284,9 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
 
 
 void TpkC::init() {
-    // Set up standard out so that it formats double with the maximum precision.
-    cout.precision(14);
-    cout.setf(std::ios::showpoint);
-
     // Construct the TCS. First we need a clock...
-    tpk::UnixClock clock(
-            37.0            // Assume that the system clock is st to UTC.
-            // TAI-UTC is 37 sec at the time of writing
-            );
+    // Assume that the system clock is st to UTC. TAI-UTC is 37 sec at the time of writing.
+    tpk::UnixClock clock(37.0);
 
     // and a Site...
     site = new tpk::Site(clock.read(),
@@ -318,9 +308,7 @@ void TpkC::init() {
     // Create a transformation that converts mm to radians for a 450000.0mm	 focal length.
     tpk::AffineTransform transf(0.0, 0.0, 1.0 / 450000.0, 0.0);
 
-    // Create mount and enclosure virtual telescopes.
-    // M3 comes automatically with TmtMountVt
-
+    // Create mount and enclosure virtual telescopes. M3 comes automatically with TmtMountVt.
     mount = new tpk::TmtMountVt(*time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
                                 tpk::ICRefSys());
     enclosure = new tpk::TmtMountVt(*time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
@@ -346,7 +334,7 @@ void TpkC::init() {
     mount->setPai(0.0, tpk::ICRefSys());
     enclosure->setPai(0.0, tpk::ICRefSys());
 
-    // XXX TODO FIXME
+    // XXX TODO FIXME: Is this needed? Can we delete this?
     tpk::ICRSTarget target(*site, "10 12 23 11 09 06");
 
     //

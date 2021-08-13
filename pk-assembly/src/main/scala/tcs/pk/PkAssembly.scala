@@ -62,7 +62,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
     command match {
       case setup: Setup =>
         setup.commandName match {
-          case "SlewToTarget" =>
+          case CommandName("SlewToTarget") =>
             validateSlewToTarget(runId, setup)
           case x =>
             Invalid(runId, UnsupportedCommandIssue(s"Command: $x is not supported for TCS pk Assembly."))
