@@ -30,6 +30,10 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   private val log                           = loggerFactory.getLogger
   private val tpkc: TpkC                    = TpkC.getInstance()
 
+  // This matches the initial pos in the tpk-jni C code and is used to simulate converging
+  // on the target
+  private var currentPos = EqCoord(152.8458, 11.1517)
+
   // Key to get the position value from a command
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
   private val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
@@ -101,8 +105,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
           val pos    = setup(posKey).head
           val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
           log.info(s"pk assembly: SlewToTarget $posStr")
-          tpkc.newTarget(pos.ra.toDegree, pos.dec.toDegree)
-          log.info(s"XXX pk assembly: after newTarget call")
+          convergeOnTarget(pos)
           CommandResponse.Completed(runId)
         }
         else {
@@ -110,6 +113,32 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
         }
       case _ =>
         CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
+    }
+  }
+
+  // Simulate converging slowly on target
+  private def convergeOnTarget(targetPos: EqCoord): Unit = {
+    val targetRa  = targetPos.ra.toDegree
+    val targetDec = targetPos.dec.toDegree
+    val curRa     = currentPos.ra.toDegree
+    val curDec    = currentPos.dec.toDegree
+    val percent   = 0.05
+    val errMargin = 0.00001
+    val newRa     = curRa + (targetRa - curRa) * percent
+    val newDec    = curDec + (targetDec - curDec) * percent
+
+    tpkc.newTarget(newRa, newDec)
+    currentPos = EqCoord(newRa, newDec)
+    if (newRa - targetRa > errMargin || newDec - targetDec > errMargin) {
+      log.info(s"XXX converging on target: $targetRa, $targetDec -> $newRa, $newDec")
+      timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
+        convergeOnTarget(targetPos)
+      }
+    }
+    else {
+      log.info(s"XXX converged on target: $targetRa, $targetDec")
+      // done
+      tpkc.newTarget(targetRa, targetDec)
     }
   }
 

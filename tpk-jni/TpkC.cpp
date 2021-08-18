@@ -123,6 +123,8 @@ TpkC::~TpkC() {
 // Allan: Args are the mount az, el and M3 demands in degrees
 void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, double m3Rotation,
                       double m3Tilt) {
+//    printf("XXX TpkC::newDemands: mcsAz=%g,  mcsEl=%g,  ecsAz=%g,  ecsEl=%g,  m3Rotation=%g,  m3Tilt=%g\n",
+//           mcsAz,  mcsEl,  ecsAz,  ecsEl,  m3Rotation,  m3Tilt);
     // Allan: Taken from the TPK_POC java callback code (Here we post an event instead of using the callback)
     double ci = 32.5;
     double ciz = 90.0 - ci;
@@ -175,7 +177,7 @@ void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, do
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
 // Args are in degrees.
 void TpkC::publishMcsDemand(double az, double el) {
-    printf("publishMcsDemand %f, %f\n", az, el);
+//    printf("publishMcsDemand %f, %f\n", az, el);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -210,7 +212,7 @@ void TpkC::publishMcsDemand(double az, double el) {
 // Publish a TCS.PointingKernelAssembly.EnclosureDemandPosition event to the CSW event service.
 // base and cap are in degrees
 void TpkC::publishEcsDemand(double base, double cap) {
-    printf("publishEcsDemand %f, %f\n", base, cap);
+//    printf("publishEcsDemand %f, %f\n", base, cap);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -249,7 +251,7 @@ void TpkC::publishEcsDemand(double base, double cap) {
 // Publish a TCS.PointingKernelAssembly.M3DemandPosition event to the CSW event service.
 // rotation and tilt are in degrees
 void TpkC::publishM3Demand(double rotation, double tilt) {
-    printf("publishM3Demand %f, %f\n", rotation, tilt);
+//    printf("publishM3Demand %f, %f\n", rotation, tilt);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -364,7 +366,7 @@ void TpkC::newTarget(double ra, double dec) {
     mount->newTarget(target);
     enclosure->newTarget(target);
 
-    printf("XXX TpkC::newTarget %f, %f\n", ra, dec);
+//    printf("XXX TpkC::newTarget %f, %f\n", ra, dec);
 }
 
 void TpkC::offset(double raO, double decO) {
