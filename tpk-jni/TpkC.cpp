@@ -287,7 +287,6 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
     cswFreeEvent(event);
 }
 
-
 void TpkC::init() {
     // Construct the TCS. First we need a clock...
     // Assume that the system clock is st to UTC. TAI-UTC is 37 sec at the time of writing.
@@ -302,7 +301,7 @@ void TpkC::init() {
                          19.82900194,     // Latitude (for Hawaii)
                          4160,            // Height (metres) (for Hawaii)
                          0.1611, 0.4475   // Polar motions (arcsec)
-                         );
+    );
 
     // Get an object for publishing CSW events
     publisher = cswEventPublisherInit();
@@ -324,7 +323,7 @@ void TpkC::init() {
     mount->newPointingModel(model);
     enclosure->newPointingModel(model);
 
-   // Make ourselves a real-time process if we have the privilege.
+    // Make ourselves a real-time process if we have the privilege.
     ScanTask::makeRealTime();
 
     // Create the slow, medium and fast threads.
@@ -339,7 +338,6 @@ void TpkC::init() {
     mount->setPai(0.0, tpk::ICRefSys());
     enclosure->setPai(0.0, tpk::ICRefSys());
 
-    // XXX TODO FIXME: Is this needed? Can we delete this?
     tpk::ICRSTarget target(*site, "10 12 23 11 09 06");
 
     //
@@ -378,26 +376,48 @@ void TpkC::offset(double raO, double decO) {
     mount->setOffset(*offset);
 }
 
+RaDec TpkC::current_position() {
+//    tpk::spherical telpos = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::FK5RefSys(), 1.0);
+    tpk::spherical telpos = mount->position();
+    RaDec raDec;
+    raDec.ra = telpos.a / tpk::TcsLib::d2r;
+    raDec.dec = telpos.b / tpk::TcsLib::d2r;
+    return raDec;
+}
+
 // --- This provides access from C, to make it easier to access from Java ---
 
-extern "C" TpkC *tpkc_ctor() {
+extern "C" {
+
+TpkC *tpkc_ctor() {
     return new TpkC();
 }
 
-extern "C" void tpkc_init(TpkC *self) {
+void tpkc_init(TpkC *self) {
     self->init();
 }
 
-extern "C" void tpkc_newDemands(TpkC *self, double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
+void tpkc_newDemands(TpkC *self, double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
     self->newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
 }
 
-extern "C" void tpkc_newTarget(TpkC *self, double ra, double dec) {
+void tpkc_newTarget(TpkC *self, double ra, double dec) {
     self->newTarget(ra, dec);
 }
 
-extern "C" void tpkc_offset(TpkC *self, double raO, double decO) {
+void tpkc_offset(TpkC *self, double raO, double decO) {
     self->offset(raO, decO);
+}
+
+// XXX JNR does not currently support returning struct by value!
+double tpkc_current_position_ra(TpkC *self) {
+    return self->current_position().ra;
+}
+
+double tpkc_current_position_dec(TpkC *self) {
+    return self->current_position().dec;
+}
+
 }
 
 // ---

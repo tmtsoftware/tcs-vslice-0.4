@@ -68,14 +68,7 @@ object PkClient extends App {
         log.error(s"Assembly connection not found: $connection")
       case Some(loc) =>
         val assembly = CommandServiceFactory.make(loc)(typedSystem)
-        assembly.submitAndWait(makeSetup()).onComplete {
-          case Success(response) =>
-            log.info(s"Single Submit Test Passed: Responses = $response")
-            typedSystem.terminate()
-          case Failure(ex) =>
-            log.info(s"Single Submit Test Failed: $ex")
-            typedSystem.terminate()
-        }
+        assembly.submitAndWait(makeSetup()).foreach(_ => typedSystem.terminate())
     }
   }
 }

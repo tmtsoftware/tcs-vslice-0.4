@@ -14,6 +14,7 @@ import csw.time.core.models.UTCTime
 import scala.concurrent.ExecutionContextExecutor
 import csw.params.commands.CommandResponse.{Accepted, Invalid, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Observe, Setup}
+import csw.time.scheduler.api.Cancellable
 import tcs.pk.wrapper.TpkC
 
 // --- Demo implementation of parts of the TCS pk assembly ---
@@ -26,13 +27,10 @@ class PkAssemblyBehaviorFactory extends ComponentBehaviorFactory {
 class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext) extends ComponentHandlers(ctx, cswCtx) {
 
   import cswCtx._
-  implicit val ec: ExecutionContextExecutor = ctx.executionContext
-  private val log                           = loggerFactory.getLogger
-  private val tpkc: TpkC                    = TpkC.getInstance()
-
-  // This matches the initial pos in the tpk-jni C code and is used to simulate converging
-  // on the target
-  private var currentPos = EqCoord(152.8458, 11.1517)
+  implicit val ec: ExecutionContextExecutor   = ctx.executionContext
+  private val log                             = loggerFactory.getLogger
+  private val tpkc: TpkC                      = TpkC.getInstance()
+  private var maybeTimer: Option[Cancellable] = None
 
   // Key to get the position value from a command
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
@@ -120,20 +118,20 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   private def convergeOnTarget(targetPos: EqCoord): Unit = {
     val targetRa  = targetPos.ra.toDegree
     val targetDec = targetPos.dec.toDegree
-    val curRa     = currentPos.ra.toDegree
-    val curDec    = currentPos.dec.toDegree
+    val curRa     = tpkc.current_position_ra()
+    val curDec    = tpkc.current_position_dec()
     val percent   = 0.05
     val errMargin = 0.00001
     val newRa     = curRa + (targetRa - curRa) * percent
     val newDec    = curDec + (targetDec - curDec) * percent
-
+    maybeTimer.foreach(_.cancel())
     tpkc.newTarget(newRa, newDec)
-    currentPos = EqCoord(newRa, newDec)
-    if (newRa - targetRa > errMargin || newDec - targetDec > errMargin) {
+    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
       log.info(s"XXX converging on target: $targetRa, $targetDec -> $newRa, $newDec")
-      timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
+      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
         convergeOnTarget(targetPos)
       }
+      maybeTimer = Some(t)
     }
     else {
       log.info(s"XXX converged on target: $targetRa, $targetDec")

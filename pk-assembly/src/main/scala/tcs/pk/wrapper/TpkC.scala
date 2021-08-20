@@ -1,7 +1,6 @@
 package tcs.pk.wrapper
 
-import jnr.ffi.Pointer
-import jnr.ffi.LibraryLoader
+import jnr.ffi.{LibraryLoader, Pointer}
 import TpkC._
 
 object TpkC {
@@ -19,6 +18,10 @@ object TpkC {
     def tpkc_newTarget(self: Pointer, ra: Double, dec: Double): Unit
 
     def tpkc_offset(self: Pointer, raO: Double, decO: Double): Unit
+
+    // XXX JNR does not currently support returning struct by value!
+    def tpkc_current_position_ra(self: Pointer): Double
+    def tpkc_current_position_dec(self: Pointer): Double
   }
 
   /**
@@ -46,5 +49,15 @@ class TpkC(val tpkExternC: TpkExternC, val self: Pointer) {
 
   def offset(raO: Double, decO: Double): Unit = {
     tpkExternC.tpkc_offset(self, raO, decO)
+  }
+
+  // The mount's current RA position
+  def current_position_ra(): Double = {
+    tpkExternC.tpkc_current_position_ra(self)
+  }
+
+  // The mount's current Dec position
+  def current_position_dec(): Double = {
+    tpkExternC.tpkc_current_position_dec(self)
   }
 }
