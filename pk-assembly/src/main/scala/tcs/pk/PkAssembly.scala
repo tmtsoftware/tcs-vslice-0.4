@@ -13,7 +13,7 @@ import csw.time.core.models.UTCTime
 
 import scala.concurrent.ExecutionContextExecutor
 import csw.params.commands.CommandResponse.{Accepted, Invalid, SubmitResponse, ValidateCommandResponse}
-import csw.params.commands.{CommandName, CommandResponse, ControlCommand, Observe, Setup}
+import csw.params.commands.{CommandResponse, ControlCommand, Observe, Setup}
 import csw.time.scheduler.api.Cancellable
 import tcs.pk.wrapper.TpkC
 
@@ -65,29 +65,36 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {}
 
   override def validateCommand(runId: Id, command: ControlCommand): ValidateCommandResponse = {
-    command match {
-      case setup: Setup =>
-        setup.commandName match {
-          case CommandName("SlewToTarget") =>
-            validateSlewToTarget(runId, setup)
-          case x =>
-            Invalid(runId, UnsupportedCommandIssue(s"Command: $x is not supported for TCS pk Assembly."))
-        }
-      case _ =>
-        Invalid(runId, UnsupportedCommandIssue(s"Command: ${command.commandName.name} is not supported for TCS pk Assembly."))
-    }
+    if (!isOnline)
+      Invalid(runId, WrongInternalStateIssue("Can't slew to target: pk assembly is offline"))
+    else
+      command match {
+        case setup: Setup =>
+          setup.commandName.name match {
+            case "SlewToTarget" =>
+              validateSlewToTarget(runId, setup)
+            case "SetOffset" =>
+              validateOffset(runId, setup)
+            case x =>
+              Invalid(runId, UnsupportedCommandIssue(s"Command: $x is not supported for TCS pk Assembly."))
+          }
+        case _ =>
+          Invalid(runId, UnsupportedCommandIssue(s"Command: ${command.commandName.name} is not supported for TCS pk Assembly."))
+      }
   }
 
   private def validateSlewToTarget(runId: Id, setup: Setup): ValidateCommandResponse = {
-    if (!isOnline) {
-      Invalid(runId, WrongInternalStateIssue("Can't slew to target: pk assembly is offline"))
-    }
-    else if (!setup.exists(posKey) && setup(posKey).size > 0) {
+    if (!(setup.exists(posKey) && setup(posKey).size > 0))
       Invalid(runId, MissingKeyIssue(s"required SlewToTarget command key: $posKey is missing."))
-    }
-    else {
+    else
       Accepted(runId)
-    }
+  }
+
+  private def validateOffset(runId: Id, setup: Setup): ValidateCommandResponse = {
+    if (!(setup.exists(xCoordinate) && setup.exists(yCoordinate)))
+      Invalid(runId, MissingKeyIssue(s"required SetOffset command keys: $xCoordinate or $yCoordinate."))
+    else
+      Accepted(runId)
   }
 
   override def onSubmit(runId: Id, command: ControlCommand): SubmitResponse = {
@@ -100,33 +107,27 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   private def onSetup(runId: Id, setup: Setup): SubmitResponse = {
-    setup.commandName match {
-      // XXX TODO FIXME: Add other fields from TCS ICD: Refframe, RadialVelocity (use Refframe for target)
-      case CommandName("SlewToTarget") =>
-        if (isOnline) {
+    if (!isOnline)
+      CommandResponse.Error(runId, "pk assembly is offline")
+    else
+      setup.commandName.name match {
+        // XXX TODO FIXME: Add other fields from TCS ICD: Refframe, RadialVelocity (use Refframe for target)
+        case "SlewToTarget" =>
           val pos    = setup(posKey).head
           val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
           log.info(s"pk assembly: SlewToTarget $posStr")
+          setOffset(0.0, 0.0)
           slewToTarget(pos)
           CommandResponse.Completed(runId)
-        }
-        else {
-          CommandResponse.Error(runId, "Can't slew to target: pk assembly is offline")
-        }
-      case CommandName("SetOffset") =>
-        if (isOnline) {
+        case "SetOffset" =>
           val x = setup(xCoordinate).head
           val y = setup(yCoordinate).head
           log.info(s"pk assembly: SetOffset $x, $y arcsec")
           setOffset(x, y)
           CommandResponse.Completed(runId)
-        }
-        else {
-          CommandResponse.Error(runId, "Can't set offset: pk assembly is offline")
-        }
-      case _ =>
-        CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
-    }
+        case _ =>
+          CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
+      }
   }
 
   // Simulate converging slowly on target
@@ -136,7 +137,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
     val curRa     = tpkc.current_position_ra()
     val curDec    = tpkc.current_position_dec()
     val percent   = 0.05
-    val errMargin = 0.00001
+    val errMargin = 0.0001
     val newRa     = curRa + (targetRa - curRa) * percent
     val newDec    = curDec + (targetDec - curDec) * percent
     maybeTimer.foreach(_.cancel())
@@ -157,20 +158,8 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   // Set a telescope offset in arcsec
   private def setOffset(x: Double, y: Double): Unit = {
-//    maybeTimer.foreach(_.cancel())
+    log.info(s"XXX SetOffset: $x, $y arcsecs")
     tpkc.offset(x, y)
-//    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
-//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
-//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
-//        slewToTarget(targetPos)
-//      }
-//      maybeTimer = Some(t)
-//    }
-//    else {
-//      log.info(s"XXX converged on target: $targetRa, $targetDec")
-//      // done
-//      tpkc.newTarget(targetRa, targetDec)
-//    }
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}

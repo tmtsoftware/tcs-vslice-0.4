@@ -10,6 +10,7 @@ import csw.location.api.models.Connection.AkkaConnection
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
+import csw.params.commands.CommandResponse.isNegative
 import csw.params.commands.Setup
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqCoord
@@ -38,7 +39,7 @@ object PkClient extends App {
   private def run(options: Options): Unit = {
 
     val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystemFactory.remote(SpawnProtocol(), "TestAssemblyClientSystem")
-    import typedSystem.executionContext
+//    import typedSystem.executionContext
 
     val host = InetAddress.getLocalHost.getHostName
     LoggingSystemFactory.start("PkClient", "0.1", host, typedSystem)
@@ -80,11 +81,12 @@ object PkClient extends App {
         log.error(s"Assembly connection not found: $connection")
       case Some(loc) =>
         val assembly = CommandServiceFactory.make(loc)(typedSystem)
-        makeSetup().foreach(setup =>
-          assembly
-            .submitAndWait(setup)
-            .foreach(_ => typedSystem.terminate())
-        )
+        makeSetup().foreach { setup =>
+          val result = Await.result(assembly.submitAndWait(setup), timeout.duration)
+          if (isNegative(result)) log.error(s"$result")
+          else log.info(s"$result")
+        }
     }
+    typedSystem.terminate()
   }
 }

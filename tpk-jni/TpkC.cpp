@@ -81,12 +81,12 @@ private:
         double tAz = 180.0 - (mount.roll() / tpk::TcsLib::d2r);
         double tEl = mount.pitch() / tpk::TcsLib::d2r;
 
-        double m3R = mount.m3Azimuth() / tpk::TcsLib::d2r;
-        double m3T = 90.0 - (mount.m3Elevation() / tpk::TcsLib::d2r);
-
         // Get the enclosure az, el demands in degrees.
         double eAz = 180.0 - (enclosure.roll() / tpk::TcsLib::d2r);
         double eEl = enclosure.pitch() / tpk::TcsLib::d2r;
+
+        double m3R = mount.m3Azimuth() / tpk::TcsLib::d2r;
+        double m3T = 90.0 - (mount.m3Elevation() / tpk::TcsLib::d2r);
 
         // Get the time stamp associated with the demands (a MJD).
 //            double t = mount.roll().timestamp();
@@ -287,6 +287,7 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
     cswFreeEvent(event);
 }
 
+// XXX TODO: Move this to constructor?
 void TpkC::init() {
     // Construct the TCS. First we need a clock...
     // Assume that the system clock is st to UTC. TAI-UTC is 37 sec at the time of writing.
@@ -317,7 +318,6 @@ void TpkC::init() {
                                 tpk::ICRefSys());
     enclosure = new tpk::TmtMountVt(*time, *site, tpk::BentNasmyth(tpk::TcsLib::pi, 0.0), &transf, nullptr,
                                     tpk::ICRefSys());
-
     // Create and install a pointing model. In a real system this would be initialised from a file.
     tpk::PointingModel model;
     mount->newPointingModel(model);
@@ -369,11 +369,8 @@ void TpkC::newTarget(double ra, double dec) {
 }
 
 void TpkC::offset(double raO, double decO) {
-    // XXX TODO FIXME: Pass in refFrame and use it in the call!
-    // Send an offset to the mount
-    auto *offset = new tpk::Offset(tpk::xycoord(
-            raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r), tpk::ICRefSys());
-    mount->setOffset(*offset);
+    mount->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
+    enclosure->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
 }
 
 RaDec TpkC::current_position() {
