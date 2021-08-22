@@ -357,6 +357,7 @@ void TpkC::init() {
 // ra and dec are expected in degrees
 void TpkC::newTarget(double ra, double dec) {
     publishDemands = true;
+    // XXX TODO FIXME: Pass in refFrame and use target subclass based on that!
     tpk::ICRSTarget target(*site, ra * tpk::TcsLib::d2r, dec * tpk::TcsLib::d2r);
     //
     // Set the mount and enclosure to the same target
@@ -368,11 +369,10 @@ void TpkC::newTarget(double ra, double dec) {
 }
 
 void TpkC::offset(double raO, double decO) {
+    // XXX TODO FIXME: Pass in refFrame and use it in the call!
     // Send an offset to the mount
-    // arcsec to radians
-    const auto as2r = tpk::TcsLib::as2r;
     auto *offset = new tpk::Offset(tpk::xycoord(
-            raO * as2r, decO * as2r), tpk::ICRefSys());
+            raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r), tpk::ICRefSys());
     mount->setOffset(*offset);
 }
 

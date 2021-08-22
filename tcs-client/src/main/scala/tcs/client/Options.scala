@@ -13,6 +13,8 @@ case class Options(
     frame: EqFrame = FK5,
     pmx: Double = 0.0,
     pmy: Double = 0.0,
+    x: Double = 0.0,
+    y: Double = 0.0,
     obsId: ObsId = ObsId("2021A-001-123")
 )
 
@@ -25,7 +27,7 @@ object Options {
 
     opt[String]('c', "command") valueName "<command>" action { (x, c) =>
       c.copy(command = CommandName(x))
-    } text s"The command to send to the pk assembly (One of: 'SlewToTarget', ...): ${defaults.command})"
+    } text s"The command to send to the pk assembly (One of: 'SlewToTarget', SetOffset, ...): ${defaults.command})"
 
     opt[String]('r', "ra") valueName "<RA>" action { (x, c) =>
       c.copy(ra = x)
@@ -39,13 +41,21 @@ object Options {
       c.copy(frame = EqFrame.withName(x))
     } text s"The frame of refererence for RA, Dec: ${defaults.frame})"
 
-    opt[Double]('x', "pmx") valueName "<x>" action { (x, c) =>
+    opt[Double]("pmx") valueName "<pmx>" action { (x, c) =>
       c.copy(pmx = x)
     } text s"The primary motion x value: ${defaults.pmx})"
 
-    opt[Double]('y', "pmy") valueName "<y>" action { (x, c) =>
+    opt[Double]("pmy") valueName "<pmy>" action { (x, c) =>
       c.copy(pmy = x)
     } text s"The primary motion y value: ${defaults.pmy})"
+
+    opt[Double]('x', "x") valueName "<x>" action { (x, c) =>
+      c.copy(x = x)
+    } text s"The x offset in arcsec: ${defaults.x})"
+
+    opt[Double]('y', "y") valueName "<y>" action { (x, c) =>
+      c.copy(y = x)
+    } text s"The y offset in arcsec: ${defaults.y})"
 
     opt[String]('o', "obsId") valueName "<id>" action { (x, c) =>
       c.copy(obsId = ObsId(x))
@@ -55,7 +65,7 @@ object Options {
     version("version")
   }
 
-  private def supportedCommands = Set("SlewToTarget")
+  private def supportedCommands = Set("SlewToTarget", "SetOffset")
 
   //noinspection SameParameterValue
   private def error(msg: String): Unit = {

@@ -36,6 +36,10 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
   private val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
 
+  // Keys for telescope offsets in arcsec
+  private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
+  private val yCoordinate: Key[Double] = KeyType.DoubleKey.make("Ycoordinate")
+
   /**
    * This helps in initializing TPK JNI Wrapper in separate thread, so that
    * New Target and Offset requests can be passed on to it
@@ -97,17 +101,28 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   private def onSetup(runId: Id, setup: Setup): SubmitResponse = {
     setup.commandName match {
-      // XXX TODO FIXME: tcs-vslice-0.3 had "setTarget" here: The ICD database has other commands...
+      // XXX TODO FIXME: Add other fields from TCS ICD: Refframe, RadialVelocity (use Refframe for target)
       case CommandName("SlewToTarget") =>
         if (isOnline) {
           val pos    = setup(posKey).head
           val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
           log.info(s"pk assembly: SlewToTarget $posStr")
-          convergeOnTarget(pos)
+          slewToTarget(pos)
           CommandResponse.Completed(runId)
         }
         else {
           CommandResponse.Error(runId, "Can't slew to target: pk assembly is offline")
+        }
+      case CommandName("SetOffset") =>
+        if (isOnline) {
+          val x = setup(xCoordinate).head
+          val y = setup(yCoordinate).head
+          log.info(s"pk assembly: SetOffset $x, $y arcsec")
+          setOffset(x, y)
+          CommandResponse.Completed(runId)
+        }
+        else {
+          CommandResponse.Error(runId, "Can't set offset: pk assembly is offline")
         }
       case _ =>
         CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
@@ -115,7 +130,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   // Simulate converging slowly on target
-  private def convergeOnTarget(targetPos: EqCoord): Unit = {
+  private def slewToTarget(targetPos: EqCoord): Unit = {
     val targetRa  = targetPos.ra.toDegree
     val targetDec = targetPos.dec.toDegree
     val curRa     = tpkc.current_position_ra()
@@ -127,9 +142,9 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
     maybeTimer.foreach(_.cancel())
     tpkc.newTarget(newRa, newDec)
     if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
-      log.info(s"XXX converging on target: $targetRa, $targetDec -> $newRa, $newDec")
+      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
       val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
-        convergeOnTarget(targetPos)
+        slewToTarget(targetPos)
       }
       maybeTimer = Some(t)
     }
@@ -138,6 +153,24 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       // done
       tpkc.newTarget(targetRa, targetDec)
     }
+  }
+
+  // Set a telescope offset in arcsec
+  private def setOffset(x: Double, y: Double): Unit = {
+//    maybeTimer.foreach(_.cancel())
+    tpkc.offset(x, y)
+//    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
+//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
+//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
+//        slewToTarget(targetPos)
+//      }
+//      maybeTimer = Some(t)
+//    }
+//    else {
+//      log.info(s"XXX converged on target: $targetRa, $targetDec")
+//      // done
+//      tpkc.newTarget(targetRa, targetDec)
+//    }
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}

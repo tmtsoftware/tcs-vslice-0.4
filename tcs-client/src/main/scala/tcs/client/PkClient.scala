@@ -19,10 +19,18 @@ import csw.prefix.models.Subsystem.TCS
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
+//noinspection DuplicatedCode
 // A client to test locating the pk assembly and sending it a command
 object PkClient extends App {
+  val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
+
+  // Keys for telescope offsets in arcsec
+  private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
+  private val yCoordinate: Key[Double] = KeyType.DoubleKey.make("Ycoordinate")
+
+  implicit val timeout: Timeout = Timeout(10.seconds)
+  val prefix                    = Prefix("TCS.pk_client")
 
   Options.parse(args, run)
 
@@ -37,29 +45,33 @@ object PkClient extends App {
     val log = GenericLoggerFactory.getLogger
     log.info("Starting PkClient")
 
-    val locationService           = HttpLocationServiceFactory.makeLocalClient(typedSystem)
-    implicit val timeout: Timeout = Timeout(10.seconds)
+    val locationService = HttpLocationServiceFactory.makeLocalClient(typedSystem)
+    val obsId           = options.obsId
+    val commandName     = options.command
 
-    val obsId                = options.obsId
-    val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
+    def makeSetup(): Option[Setup] = {
+      commandName.name match {
+        case "SlewToTarget" =>
+          val pm = ProperMotion(options.pmx, options.pmy)
+          val eqCoord = EqCoord(
+            ra = options.ra,
+            dec = options.dec,
+            frame = options.frame,
+            pmx = pm.pmx,
+            pmy = pm.pmy
+          )
+          val posParam = posKey.set(
+            eqCoord
+          )
+          log.info(s"XXX Using coords: ${Angle.raToString(eqCoord.ra.toRadian)}, ${Angle.deToString(eqCoord.dec.toRadian)}")
+          Some(Setup(prefix, commandName, Some(obsId)).add(posParam))
+        case "SetOffset" =>
+          val x = xCoordinate.set(options.x)
+          val y = yCoordinate.set(options.y)
+          Some(Setup(prefix, commandName, Some(obsId)).add(x).add(y))
 
-    val prefix      = Prefix("TCS.pk_client")
-    val commandName = options.command
-
-    def makeSetup(): Setup = {
-      val pm = ProperMotion(options.pmx, options.pmy)
-      val eqCoord = EqCoord(
-        ra = options.ra,
-        dec = options.dec,
-        frame = options.frame,
-        pmx = pm.pmx,
-        pmy = pm.pmy
-      )
-      val posParam = posKey.set(
-        eqCoord
-      )
-      log.info(s"XXX Using coords: ${Angle.raToString(eqCoord.ra.toRadian)}, ${Angle.deToString(eqCoord.dec.toRadian)}")
-      Setup(prefix, commandName, Some(obsId)).add(posParam)
+        case _ => None
+      }
     }
 
     val connection = AkkaConnection(ComponentId(Prefix(TCS, "PointingKernelAssembly"), Assembly))
@@ -68,7 +80,11 @@ object PkClient extends App {
         log.error(s"Assembly connection not found: $connection")
       case Some(loc) =>
         val assembly = CommandServiceFactory.make(loc)(typedSystem)
-        assembly.submitAndWait(makeSetup()).foreach(_ => typedSystem.terminate())
+        makeSetup().foreach(setup =>
+          assembly
+            .submitAndWait(setup)
+            .foreach(_ => typedSystem.terminate())
+        )
     }
   }
 }
