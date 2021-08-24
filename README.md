@@ -1,17 +1,27 @@
 # TCS Vertical Slice Demo
 
-*Note: This project is still in early development.*
-
 This project contains demo CSW assemblies and test client code based on the TCS API
 as defined the the [ICD Database](https://github.com/tmtsoftware/icd).
 
-It makes use of the Scala based CSW framework, and also links with native C/C++ code.
+It makes use of the Scala based CSW framework, and also links with native C/C++ code
+(using [JNR - Java Native Runtime](https://github.com/jnr/jnr-ffi/blob/master/docs/README.md)).
 For example, the pk (Pointing Kernel) assembly receives a `SlewToTarget` command and then
-makes a call to C/C++ code that then posts events using the [CSW C API](https://github.com/tmtsoftware/csw-c).
+makes a call to C/C++ code that calls [TPK](https://github.com/tmtsoftware/TPK) routines to set a target and 
+then posts events using the [CSW C API](https://github.com/tmtsoftware/csw-c).
 
-At this early point, the only code subscribing to those events is in the [tcs-client](tcs-client) subproject.
-It is planned to add a web app at some point to receive those events over the [ESW](https://github.com/tmtsoftware/esw) gateway
-and display information, graphics or image, etc.
+You can subscribe to those events for test purposes using the [tcs-client](tcs-client) command line subproject,
+which just prints out the events received on stdout.
+
+Also the [CSW Event Monitor](https://github.com/tmtsoftware/csw-event-monitor) uses
+the [ESW](https://github.com/tmtsoftware/esw) gateway
+to subscribe to events and can be used to display tables and charts based on the event values.
+
+Note: In order to test this project with the CSW Event Monitor, you will currently need to run 
+the [icdwebserver](https://github.com/tmtsoftware/icd) on localhost and import a slightly
+modified version of the [TCS-Model-Files](https://github.com/tmt-icd/TCS-Model-Files) repositor
+(branch: `tcs-vslice-04-test`). The branch has been modified to use the CSW altAzCoord type instead
+of separate parameters for alt and az, etc.
+The pk assembly provided here assumes the use of the altAzCoord type and posts events using it.
 
 ## Dependencies
 
@@ -41,6 +51,11 @@ To see the events being fired from the C/C++ code, you can run the pk-event-clie
 
     ./target/universal/stage/bin/pk-event-client
 
+Or you can run the [CSW Event Monitor](https://github.com/tmtsoftware/csw-event-monitor)
+and display the event values in tables or charts.
+This requires also running the following services:
 
+* __esw-services__ start (from [esw](https://github.com/tmtsoftware/esw))
+* __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd))
 
     
