@@ -4,8 +4,14 @@
 #include "tpk/UnixClock.h"
 #include "csw/csw.h"
 
-// multiply to convert degrees to microarcseconds
-const double d2Mas = 60.0 * 60.0 * 1000.0 * 1000.0;
+// Convert degrees to microarcseconds
+static double deg2Mas(double d) { return d * 60.0 * 60.0 * 1000.0 * 1000.0; }
+
+// Convert degrees to radians
+static double deg2Rad(double d) { return d * M_PI / 180.0; }
+
+// Convert radians to degrees
+static double rad2Deg(double d) { return d * 180.0 / M_PI; }
 
 // CSW component prefix
 const char *prefix = "TCS.PointingKernelAssembly";
@@ -78,18 +84,15 @@ private:
 
         // Get the mount az, el and M3 demands in degrees.
 
-        double tAz = 180.0 - (mount.roll() / tpk::TcsLib::d2r);
-        double tEl = mount.pitch() / tpk::TcsLib::d2r;
+        double tAz = 180.0 - rad2Deg(mount.roll());
+        double tEl = rad2Deg(mount.pitch());
 
         // Get the enclosure az, el demands in degrees.
-        double eAz = 180.0 - (enclosure.roll() / tpk::TcsLib::d2r);
-        double eEl = enclosure.pitch() / tpk::TcsLib::d2r;
+        double eAz = 180.0 - rad2Deg(enclosure.roll());
+        double eEl = rad2Deg(enclosure.pitch());
 
-        double m3R = mount.m3Azimuth() / tpk::TcsLib::d2r;
-        double m3T = 90.0 - (mount.m3Elevation() / tpk::TcsLib::d2r);
-
-        // Get the time stamp associated with the demands (a MJD).
-//            double t = mount.roll().timestamp();
+        double m3R = rad2Deg(mount.m3Azimuth());
+        double m3T = 90.0 - rad2Deg(mount.m3Elevation());
 
         if (tpkC)
             tpkC->newDemands(tAz, tEl, eAz, eEl, m3R, m3T);
@@ -120,64 +123,42 @@ TpkC::~TpkC() {
 }
 
 
-// Allan: Args are the mount az, el and M3 demands in degrees
-void TpkC::newDemands(double mcsAz, double mcsEl, double ecsAz, double ecsEl, double m3Rotation,
-                      double m3Tilt) {
-//    printf("XXX TpkC::newDemands: mcsAz=%g,  mcsEl=%g,  ecsAz=%g,  ecsEl=%g,  m3Rotation=%g,  m3Tilt=%g\n",
-//           mcsAz,  mcsEl,  ecsAz,  ecsEl,  m3Rotation,  m3Tilt);
-    // Allan: Taken from the TPK_POC java callback code (Here we post an event instead of using the callback)
+// Called when there are new demands: All args are in deg
+void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double ecsElDeg, double m3RotationDeg,
+                      double m3TiltDeg) {
+    double az = deg2Rad(ecsAzDeg);
+    double el = deg2Rad(ecsElDeg);
     double ci = 32.5;
+    // Cap inclination fixed enclosure cap inclination
     double ciz = 90.0 - ci;
-//    double phir = M_PI * ci / 180;
-    double tci = tan(ci);
-    double cci = cos(ci);
     double PI2 = M_PI * 2;
 
     // Convert eAz, eEl into base & cap coordinates
-    double azShift, base1, cap1; //, base2, cap2;
-    if ((ecsEl > PI2) || (ecsEl < 0))
-        ecsEl = 0;
-    if ((ecsAz > PI2) || (ecsAz < 0))
-        ecsAz = 0;
+    if ((el > PI2) || (el < 0)) {
+        el = 0;
+    }
+    if ((az > PI2) || (az < 0)) {
+        az = 0;
+    }
 
-    cap1 = acos(tan(ecsEl - ciz) / tci);
-//        cap2 = PI2 - cap1;
-
-    if (ecsEl == PI2)
-        azShift = 0;
-    else
-        azShift = atan(sin(cap1) / cci * (1 - cos(cap1)));
-
-    if ((ecsAz + azShift) > PI2)
-        base1 = (ecsAz + azShift) - PI2;
-    else
-        base1 = ecsAz + azShift;
-
-//        if (ecsAz < azShift)
-//            base2 = PI2 + ecsAz - azShift;
-//        else
-//            base2 = ecsAz - azShift;
-
-    base1 = 180 * base1 / M_PI;
-    cap1 = 180 * cap1 / M_PI;
-
-    // base 1 & 2 and cap 1 & 2 can be used for CW, CCW and shortest path
-    // for now just base 1 and cap 1 are used
+    double cap1 = acos(tan(el - ciz) / tan(ci));
+    // check for division by zero from altitude angle at 90 degrees
+    double azShift = (el == M_PI_2) ? 0.0 : atan(sin(cap1) / cos(ci) * (1 - cos(cap1)));
+    double base1 = ((az + azShift) > PI2) ? (az + azShift) - PI2 : az + azShift;
 
     // Below condition will help in preventing TPK Default Demands
     // from getting published and Demand Publishing will start only
     // once New target or Offset Command is being received
     if (publishDemands) {
-        publishMcsDemand(mcsAz, mcsEl);
-        publishEcsDemand(base1, cap1);
-        publishM3Demand(m3Rotation, m3Tilt);
+        publishMcsDemand(mcsAzDeg, mcsElDeg);
+        publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
+        publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }
 
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
 // Args are in degrees.
 void TpkC::publishMcsDemand(double az, double el) {
-//    printf("publishMcsDemand %f, %f\n", az, el);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -185,7 +166,7 @@ void TpkC::publishMcsDemand(double az, double el) {
 
     // pos
     CswAltAzCoord values[1];
-    values[0] = cswMakeAltAzCoord("BASE", lround(az * d2Mas), lround(el * d2Mas));
+    values[0] = cswMakeAltAzCoord("BASE", lround(deg2Mas(az)), lround(deg2Mas(el)));
     CswArrayValue arrayValues = {.values = values, .numValues = 1};
     CswParameter coordParam = cswMakeParameter("pos", AltAzCoordKey, arrayValues, csw_unit_NoUnits);
 
@@ -212,7 +193,6 @@ void TpkC::publishMcsDemand(double az, double el) {
 // Publish a TCS.PointingKernelAssembly.EnclosureDemandPosition event to the CSW event service.
 // base and cap are in degrees
 void TpkC::publishEcsDemand(double base, double cap) {
-//    printf("publishEcsDemand %f, %f\n", base, cap);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -251,7 +231,6 @@ void TpkC::publishEcsDemand(double base, double cap) {
 // Publish a TCS.PointingKernelAssembly.M3DemandPosition event to the CSW event service.
 // rotation and tilt are in degrees
 void TpkC::publishM3Demand(double rotation, double tilt) {
-//    printf("publishM3Demand %f, %f\n", rotation, tilt);
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
@@ -358,14 +337,12 @@ void TpkC::init() {
 void TpkC::newTarget(double ra, double dec) {
     publishDemands = true;
     // XXX TODO FIXME: Pass in refFrame and use target subclass based on that!
-    tpk::ICRSTarget target(*site, ra * tpk::TcsLib::d2r, dec * tpk::TcsLib::d2r);
+    tpk::ICRSTarget target(*site, deg2Rad(ra), deg2Rad(dec));
     //
     // Set the mount and enclosure to the same target
     //
     mount->newTarget(target);
     enclosure->newTarget(target);
-
-//    printf("XXX TpkC::newTarget %f, %f\n", ra, dec);
 }
 
 void TpkC::offset(double raO, double decO) {
@@ -377,8 +354,8 @@ RaDec TpkC::current_position() {
 //    tpk::spherical telpos = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::FK5RefSys(), 1.0);
     tpk::spherical telpos = mount->position();
     RaDec raDec;
-    raDec.ra = telpos.a / tpk::TcsLib::d2r;
-    raDec.dec = telpos.b / tpk::TcsLib::d2r;
+    raDec.ra = rad2Deg(telpos.a);
+    raDec.dec = rad2Deg(telpos.b);
     return raDec;
 }
 

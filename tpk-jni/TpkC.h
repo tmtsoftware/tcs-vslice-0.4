@@ -24,7 +24,7 @@ public:
 
     void init();
 
-    void newDemands(double mAz, double mEl, double eAz, double eEl, double m3R, double m3T);
+    void newDemands(double mcsAzDeg, double mcsElDeg, double eAz, double eEl, double m3RotationDeg, double m3TiltDeg);
 
     void newTarget(double ra, double dec);
 
