@@ -8,10 +8,10 @@
 static double deg2Mas(double d) { return d * 60.0 * 60.0 * 1000.0 * 1000.0; }
 
 // Convert degrees to radians
-static double deg2Rad(double d) { return d * M_PI / 180.0; }
+#define deg2Rad(d) ((d) * M_PI / 180.0)
 
 // Convert radians to degrees
-static double rad2Deg(double d) { return d * 180.0 / M_PI; }
+#define rad2Deg(d) ((d) * 180.0 / M_PI)
 
 // CSW component prefix
 const char *prefix = "TCS.PointingKernelAssembly";
@@ -122,22 +122,42 @@ TpkC::~TpkC() {
     delete enclosure;
 }
 
+static const double ci = deg2Rad(32.5); // degrees
+static const double ciz = deg2Rad(90.0 - 32.5);
+static const double PI2 = M_PI * 2;
+
+
+// XXX TODO: Make unit test
+//testXXX(0.0, 90.0);
+//testXXX(26.0, 164.1);
+//testXXX(27.0, 157.6);
+//testXXX(59.0, 87.6);
+//testXXX(60.0, 86.05);
+//testXXX(90.0, 57.5);
+//testXXX(180.0, 25.0);
+//static void testXXX(double ecsElDeg, double expected) {
+//    double el = deg2Rad(ecsElDeg);
+//    if ((el > PI2) || (el < 0)) {
+//        printf("XXX test: el out of range: %g rad (%g deg)\n", el, ecsElDeg);
+//        el = 0;
+//    }
+//    double cap1 = acos(tan(el - ciz) / tan(ci));
+//    printf("XXX test el=%g, cap=%g (expected: %g): \n", ecsElDeg, rad2Deg(cap1), expected);
+//}
+
 
 // Called when there are new demands: All args are in deg
 void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double ecsElDeg, double m3RotationDeg,
                       double m3TiltDeg) {
     double az = deg2Rad(ecsAzDeg);
     double el = deg2Rad(ecsElDeg);
-    double ci = 32.5;
-    // Cap inclination fixed enclosure cap inclination
-    double ciz = 90.0 - ci;
-    double PI2 = M_PI * 2;
-
     // Convert eAz, eEl into base & cap coordinates
     if ((el > PI2) || (el < 0)) {
+        printf("XXX el out of range: %g rad (%g deg)\n", el, ecsElDeg);
         el = 0;
     }
     if ((az > PI2) || (az < 0)) {
+        printf("XXX az out of range: %g rad (%g deg)\n", az, ecsAzDeg);
         az = 0;
     }
 
@@ -146,11 +166,14 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     double azShift = (el == M_PI_2) ? 0.0 : atan(sin(cap1) / cos(ci) * (1 - cos(cap1)));
     double base1 = ((az + azShift) > PI2) ? (az + azShift) - PI2 : az + azShift;
 
+
     // Below condition will help in preventing TPK Default Demands
     // from getting published and Demand Publishing will start only
     // once New target or Offset Command is being received
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
+        printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
+               el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
         publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
@@ -351,7 +374,12 @@ void TpkC::offset(double raO, double decO) {
 }
 
 RaDec TpkC::current_position() {
-//    tpk::spherical telpos = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::FK5RefSys(), 1.0);
+    tpk::spherical telposXXX = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::AzElRefSys(), 1.0);
+    double az = rad2Deg(telposXXX.a);
+    double el = rad2Deg(telposXXX.b);
+    printf("XXX current pos: az=%g, el=%g\n", az, el);
+
+
     tpk::spherical telpos = mount->position();
     RaDec raDec;
     raDec.ra = rad2Deg(telpos.a);

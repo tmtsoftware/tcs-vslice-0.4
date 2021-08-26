@@ -131,30 +131,60 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   // Simulate converging slowly on target
+  // XXX TODO FIXME temp
   private def slewToTarget(targetPos: EqCoord): Unit = {
     val targetRa  = targetPos.ra.toDegree
     val targetDec = targetPos.dec.toDegree
-    val curRa     = tpkc.current_position_ra()
-    val curDec    = tpkc.current_position_dec()
-    val percent   = 0.05
-    val errMargin = 0.0001
-    val newRa     = curRa + (targetRa - curRa) * percent
-    val newDec    = curDec + (targetDec - curDec) * percent
-    maybeTimer.foreach(_.cancel())
+//    val curRa     = tpkc.current_position_ra()
+//    val curDec    = tpkc.current_position_dec()
+//    val percent   = 0.05
+//    val errMargin = 0.0001
+//    val newRa     = curRa + (targetRa - curRa) * percent
+//    val newDec    = curDec + (targetDec - curDec) * percent
+    val newRa  = targetRa
+    val newDec = targetDec
     tpkc.newTarget(newRa, newDec)
-    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
-      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
-      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
-        slewToTarget(targetPos)
-      }
-      maybeTimer = Some(t)
-    }
-    else {
-      log.info(s"XXX converged on target: $targetRa, $targetDec")
-      // done
-      tpkc.newTarget(targetRa, targetDec)
-    }
+    log.info(s"XXX converged on target: $targetRa, $targetDec")
+
+    //    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
+//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
+//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
+//        slewToTarget(targetPos)
+//      }
+//      maybeTimer = Some(t)
+//    }
+//    else {
+//      log.info(s"XXX converged on target: $targetRa, $targetDec")
+//      // done
+//      tpkc.newTarget(targetRa, targetDec)
+//    }
   }
+
+//  // Simulate converging slowly on target
+//  private def slewToTarget(targetPos: EqCoord): Unit = {
+//    val targetRa  = targetPos.ra.toDegree
+//    val targetDec = targetPos.dec.toDegree
+//    val curRa     = tpkc.current_position_ra()
+//    val curDec    = tpkc.current_position_dec()
+//    val percent   = 0.05
+//    val errMargin = 0.0001
+//    val newRa     = curRa + (targetRa - curRa) * percent
+//    val newDec    = curDec + (targetDec - curDec) * percent
+//    maybeTimer.foreach(_.cancel())
+//    tpkc.newTarget(newRa, newDec)
+//    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
+//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
+//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
+//        slewToTarget(targetPos)
+//      }
+//      maybeTimer = Some(t)
+//    }
+//    else {
+//      log.info(s"XXX converged on target: $targetRa, $targetDec")
+//      // done
+//      tpkc.newTarget(targetRa, targetDec)
+//    }
+//  }
 
   // Set a telescope offset in arcsec
   private def setOffset(x: Double, y: Double): Unit = {
