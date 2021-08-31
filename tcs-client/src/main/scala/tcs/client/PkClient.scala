@@ -39,7 +39,6 @@ object PkClient extends App {
   private def run(options: Options): Unit = {
 
     val typedSystem: ActorSystem[SpawnProtocol.Command] = ActorSystemFactory.remote(SpawnProtocol(), "TestAssemblyClientSystem")
-//    import typedSystem.executionContext
 
     val host = InetAddress.getLocalHost.getHostName
     LoggingSystemFactory.start("PkClient", "0.1", host, typedSystem)
@@ -64,7 +63,6 @@ object PkClient extends App {
           val posParam = posKey.set(
             eqCoord
           )
-          log.info(s"XXX Using coords: ${Angle.raToString(eqCoord.ra.toRadian)}, ${Angle.deToString(eqCoord.dec.toRadian)}")
           Some(Setup(prefix, commandName, Some(obsId)).add(posParam))
         case "SetOffset" =>
           val x = xCoordinate.set(options.x)

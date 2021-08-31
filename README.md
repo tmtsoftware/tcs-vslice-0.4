@@ -47,15 +47,38 @@ To run the pk assembly, run:
 
     ./target/universal/stage/bin/tcs-deploy --local ./tcs-deploy/src/main/resources/PkContainer.conf
 
-To see the events being fired from the C/C++ code, you can run the pk-event-client:
+To send a command to the pk assembly, you can use the pk-client command line application:
+
+```
+pk-client 0.0.1
+Usage: pk-client [options]
+
+  -c, --command <command>  The command to send to the pk assembly (One of: SlewToTarget, SetOffset. Default: SlewToTarget)
+  -r, --ra <RA>            The RA coordinate for the command: (default: 12:13:14.15)
+  -d, --dec <Dec>          The Dec coordinate for the command: (default: -30:31:32.3)
+  -f, --frame <frame>      The frame of refererence for RA, Dec: (default: FK5)
+  --pmx <pmx>              The primary motion x value: (default: 0.0)
+  --pmy <pmy>              The primary motion y value: (default: 0.0)
+  -x, --x <x>              The x offset in arcsec: (default: 0.0)
+  -y, --y <y>              The y offset in arcsec: (default: 0.0)
+  -o, --obsId <id>         The observation id: (default: 2021A-001-123)
+  --help
+  --version
+```
+
+Example:
+
+    ./target/universal/stage/bin/pk-client -c SlewToTarget --ra 2:11:12 --dec 78:21:22
+
+To see the events being fired from the C/C++ code, you can run the pk-event-client, which has the
+same options as pk-client, but instead of exiting, subscribes to events and displays them on stdout:
 
     ./target/universal/stage/bin/pk-event-client
 
-Or you can run the [CSW Event Monitor](https://github.com/tmtsoftware/csw-event-monitor)
+Or, for a more user-friendly view, you can run the [CSW Event Monitor](https://github.com/tmtsoftware/csw-event-monitor)
 and display the event values in tables or charts.
 This requires also running the following services:
 
 * __esw-services__ start (from [esw](https://github.com/tmtsoftware/esw))
 * __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd))
 
-    

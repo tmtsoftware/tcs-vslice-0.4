@@ -133,18 +133,17 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   // Simulate converging slowly on target
   // XXX TODO FIXME temp
   private def slewToTarget(targetPos: EqCoord): Unit = {
-    val targetRa  = targetPos.ra.toDegree
-    val targetDec = targetPos.dec.toDegree
+//    val targetRa  = targetPos.ra.toDegree
+//    val targetDec = targetPos.dec.toDegree
 //    val curRa     = tpkc.current_position_ra()
 //    val curDec    = tpkc.current_position_dec()
 //    val percent   = 0.05
 //    val errMargin = 0.0001
 //    val newRa     = curRa + (targetRa - curRa) * percent
 //    val newDec    = curDec + (targetDec - curDec) * percent
-    val newRa  = targetRa
-    val newDec = targetDec
-    tpkc.newTarget(newRa, newDec)
-    log.info(s"XXX converged on target: $targetRa, $targetDec")
+//    val newRa  = targetRa
+//    val newDec = targetDec
+    tpkc.newTarget(targetPos.ra.toDegree, targetPos.dec.toDegree)
 
     //    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
 //      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
@@ -188,7 +187,6 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   // Set a telescope offset in arcsec
   private def setOffset(x: Double, y: Double): Unit = {
-    log.info(s"XXX SetOffset: $x, $y arcsecs")
     tpkc.offset(x, y)
   }
 
