@@ -19,7 +19,7 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.ProperMotion
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
-import csw.params.core.models.Coords.EqCoord
+import csw.params.core.models.Coords.{Coord, EqCoord}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 import csw.services.BuildInfo
@@ -46,7 +46,7 @@ object PkEventClient extends App {
     val locationService           = HttpLocationServiceFactory.makeLocalClient(typedSystem)
     implicit val timeout: Timeout = Timeout(10.seconds)
     val obsId                     = options.obsId
-    val posKey: Key[EqCoord]      = KeyType.EqCoordKey.make("pos")
+    val posKey: Key[Coord]        = KeyType.CoordKey.make("pos")
     val prefix                    = Prefix("TCS.pk_event_client")
     val commandName               = options.command
 

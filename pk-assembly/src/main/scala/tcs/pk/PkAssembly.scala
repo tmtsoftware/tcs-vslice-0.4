@@ -7,14 +7,14 @@ import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandIssue.{MissingKeyIssue, UnsupportedCommandIssue, WrongInternalStateIssue}
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Coords.EqCoord
+import csw.params.core.models.Coords.{AltAzCoord, Coord, EqCoord}
 import csw.params.core.models.{Angle, Id}
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.ExecutionContextExecutor
 import csw.params.commands.CommandResponse.{Accepted, Invalid, SubmitResponse, ValidateCommandResponse}
 import csw.params.commands.{CommandResponse, ControlCommand, Observe, Setup}
-import csw.time.scheduler.api.Cancellable
+import csw.params.core.models.Coords.EqFrame.{FK5, ICRS}
 import tcs.pk.wrapper.TpkC
 
 // --- Demo implementation of parts of the TCS pk assembly ---
@@ -27,14 +27,13 @@ class PkAssemblyBehaviorFactory extends ComponentBehaviorFactory {
 class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext) extends ComponentHandlers(ctx, cswCtx) {
 
   import cswCtx._
-  implicit val ec: ExecutionContextExecutor   = ctx.executionContext
-  private val log                             = loggerFactory.getLogger
-  private val tpkc: TpkC                      = TpkC.getInstance()
-  private var maybeTimer: Option[Cancellable] = None
+  implicit val ec: ExecutionContextExecutor = ctx.executionContext
+  private val log                           = loggerFactory.getLogger
+  private val tpkc: TpkC                    = TpkC.getInstance()
 
   // Key to get the position value from a command
-  // (Note: Using EqCoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
-  private val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
+  // (Note: Using CoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
+  private val posKey: Key[Coord] = KeyType.CoordKey.make("pos")
 
   // Keys for telescope offsets in arcsec
   private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
@@ -111,14 +110,10 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       CommandResponse.Error(runId, "pk assembly is offline")
     else
       setup.commandName.name match {
-        // XXX TODO FIXME: Add other fields from TCS ICD: Refframe, RadialVelocity (use Refframe for target)
         case "SlewToTarget" =>
-          val pos    = setup(posKey).head
-          val posStr = s"${Angle.raToString(pos.ra.toRadian)} ${Angle.deToString(pos.dec.toRadian)}"
-          log.info(s"pk assembly: SlewToTarget $posStr")
+          val pos = setup(posKey).head
           setOffset(0.0, 0.0)
-          slewToTarget(pos)
-          CommandResponse.Completed(runId)
+          slewToTarget(runId, pos)
         case "SetOffset" =>
           val x = setup(xCoordinate).head
           val y = setup(yCoordinate).head
@@ -130,60 +125,26 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       }
   }
 
-  // Simulate converging slowly on target
-  // XXX TODO FIXME temp
-  private def slewToTarget(targetPos: EqCoord): Unit = {
-//    val targetRa  = targetPos.ra.toDegree
-//    val targetDec = targetPos.dec.toDegree
-//    val curRa     = tpkc.current_position_ra()
-//    val curDec    = tpkc.current_position_dec()
-//    val percent   = 0.05
-//    val errMargin = 0.0001
-//    val newRa     = curRa + (targetRa - curRa) * percent
-//    val newDec    = curDec + (targetDec - curDec) * percent
-//    val newRa  = targetRa
-//    val newDec = targetDec
-    tpkc.newTarget(targetPos.ra.toDegree, targetPos.dec.toDegree)
-
-    //    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
-//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
-//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
-//        slewToTarget(targetPos)
-//      }
-//      maybeTimer = Some(t)
-//    }
-//    else {
-//      log.info(s"XXX converged on target: $targetRa, $targetDec")
-//      // done
-//      tpkc.newTarget(targetRa, targetDec)
-//    }
+  // Set the target position
+  private def slewToTarget(runId: Id, targetPos: Coord): SubmitResponse = {
+    targetPos match {
+      case EqCoord(_, ra, dec, frame, _, _) =>
+        log.info(s"SlewToTarget ${Angle.raToString(ra.toRadian)}, ${Angle.deToString(dec.toRadian)} ($frame)")
+        frame match {
+          case ICRS =>
+            tpkc.newICRSTarget(ra.toDegree, dec.toDegree)
+          case FK5 =>
+            tpkc.newFK5Target(ra.toDegree, dec.toDegree)
+        }
+        CommandResponse.Completed(runId)
+      case AltAzCoord(_, alt, az) =>
+        log.info(s"SlewToTarget ${Angle.deToString(alt.toRadian)}, ${Angle.raToString(az.toRadian)} (Alt/Az)")
+        tpkc.newAzElTarget(az.toDegree, alt.toDegree)
+        CommandResponse.Completed(runId)
+      case x =>
+        CommandResponse.Error(runId, s"Unsupported coordinate type: $x")
+    }
   }
-
-//  // Simulate converging slowly on target
-//  private def slewToTarget(targetPos: EqCoord): Unit = {
-//    val targetRa  = targetPos.ra.toDegree
-//    val targetDec = targetPos.dec.toDegree
-//    val curRa     = tpkc.current_position_ra()
-//    val curDec    = tpkc.current_position_dec()
-//    val percent   = 0.05
-//    val errMargin = 0.0001
-//    val newRa     = curRa + (targetRa - curRa) * percent
-//    val newDec    = curDec + (targetDec - curDec) * percent
-//    maybeTimer.foreach(_.cancel())
-//    tpkc.newTarget(newRa, newDec)
-//    if (Math.abs(newRa - targetRa) > errMargin || Math.abs(newDec - targetDec) > errMargin) {
-//      log.info(s"XXX Slewing to target: $targetRa, $targetDec -> Now at: $newRa, $newDec")
-//      val t = timeServiceScheduler.scheduleOnce(UTCTime(UTCTime.now().value.plusMillis(200))) {
-//        slewToTarget(targetPos)
-//      }
-//      maybeTimer = Some(t)
-//    }
-//    else {
-//      log.info(s"XXX converged on target: $targetRa, $targetDec")
-//      // done
-//      tpkc.newTarget(targetRa, targetDec)
-//    }
-//  }
 
   // Set a telescope offset in arcsec
   private def setOffset(x: Double, y: Double): Unit = {

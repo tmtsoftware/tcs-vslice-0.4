@@ -13,8 +13,8 @@ import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.CommandResponse.isNegative
 import csw.params.commands.Setup
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Coords.EqCoord
-import csw.params.core.models.{Angle, ProperMotion}
+import csw.params.core.models.Coords.{Coord, EqCoord}
+import csw.params.core.models.ProperMotion
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 
@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 //noinspection DuplicatedCode
 // A client to test locating the pk assembly and sending it a command
 object PkClient extends App {
-  val posKey: Key[EqCoord] = KeyType.EqCoordKey.make("pos")
+  val posKey: Key[Coord] = KeyType.CoordKey.make("pos")
 
   // Keys for telescope offsets in arcsec
   private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")

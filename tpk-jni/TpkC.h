@@ -26,7 +26,9 @@ public:
 
     void newDemands(double mcsAzDeg, double mcsElDeg, double eAz, double eEl, double m3RotationDeg, double m3TiltDeg);
 
-    void newTarget(double ra, double dec);
+    void newICRSTarget(double ra, double dec);
+    void newFK5Target(double ra, double dec);
+    void newAzElTarget(double ra, double dec);
 
     void offset(double raO, double decO);
 

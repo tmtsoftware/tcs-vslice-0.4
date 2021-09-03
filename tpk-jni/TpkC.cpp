@@ -151,30 +151,32 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
                       double m3TiltDeg) {
     double az = deg2Rad(ecsAzDeg);
     double el = deg2Rad(ecsElDeg);
-    // Convert eAz, eEl into base & cap coordinates
+
     if ((el > PI2) || (el < 0)) {
-        printf("XXX el out of range: %g rad (%g deg)\n", el, ecsElDeg);
+//        printf("XXX el out of range: %g rad (%g deg)\n", el, ecsElDeg);
         el = 0;
     }
     if ((az > PI2) || (az < 0)) {
-        printf("XXX az out of range: %g rad (%g deg)\n", az, ecsAzDeg);
+//        printf("XXX az out of range: %g rad (%g deg)\n", az, ecsAzDeg);
         az = 0;
     }
 
+    // Convert eAz, eEl into base & cap coordinates
     double cap1 = acos(tan(el - ciz) / tan(ci));
     // check for division by zero from altitude angle at 90 degrees
     double azShift = (el == M_PI_2) ? 0.0 : atan(sin(cap1) / cos(ci) * (1 - cos(cap1)));
     double base1 = ((az + azShift) > PI2) ? (az + azShift) - PI2 : az + azShift;
-
 
     // Below condition will help in preventing TPK Default Demands
     // from getting published and Demand Publishing will start only
     // once New target or Offset Command is being received
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
-        printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
-               el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
-        publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
+        if (! (std::isnan(base1) || std::isnan(cap1))) {
+            printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
+                   el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
+            publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
+        }
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }
@@ -357,28 +359,40 @@ void TpkC::init() {
 }
 
 // ra and dec are expected in degrees
-void TpkC::newTarget(double ra, double dec) {
+void TpkC::newICRSTarget(double ra, double dec) {
     publishDemands = true;
-    // XXX TODO FIXME: Pass in refFrame and use target subclass based on that!
     tpk::ICRSTarget target(*site, deg2Rad(ra), deg2Rad(dec));
-    //
-    // Set the mount and enclosure to the same target
-    //
     mount->newTarget(target);
     enclosure->newTarget(target);
 }
 
+// ra and dec are expected in degrees
+void TpkC::newFK5Target(double ra, double dec) {
+    publishDemands = true;
+    tpk::FK5Target target(*site, deg2Rad(ra), deg2Rad(dec));
+    mount->newTarget(target);
+    enclosure->newTarget(target);
+}
+
+// az and el are expected in degrees
+void TpkC::newAzElTarget(double az, double el) {
+    publishDemands = true;
+    tpk::AzElTarget target(*site, deg2Rad(az), deg2Rad(el));
+    mount->newTarget(target);
+    enclosure->newTarget(target);
+}
+
+// raO and decO are expected in arcsec
 void TpkC::offset(double raO, double decO) {
     mount->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
     enclosure->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
 }
 
 RaDec TpkC::current_position() {
-    tpk::spherical telposXXX = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::AzElRefSys(), 1.0);
-    double az = rad2Deg(telposXXX.a);
-    double el = rad2Deg(telposXXX.b);
-    printf("XXX current pos: az=%g, el=%g\n", az, el);
-
+//    tpk::spherical telposXXX = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::AzElRefSys(), 1.0);
+//    double az = rad2Deg(telposXXX.a);
+//    double el = rad2Deg(telposXXX.b);
+//    printf("XXX current pos: az=%g, el=%g\n", az, el);
 
     tpk::spherical telpos = mount->position();
     RaDec raDec;
@@ -403,8 +417,16 @@ void tpkc_newDemands(TpkC *self, double mAz, double mEl, double eAz, double eEl,
     self->newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
 }
 
-void tpkc_newTarget(TpkC *self, double ra, double dec) {
-    self->newTarget(ra, dec);
+void tpkc_newICRSTarget(TpkC *self, double ra, double dec) {
+    self->newICRSTarget(ra, dec);
+}
+
+void tpkc_newFK5Target(TpkC *self, double ra, double dec) {
+    self->newFK5Target(ra, dec);
+}
+
+void tpkc_newAzElTarget(TpkC *self, double ra, double dec) {
+    self->newAzElTarget(ra, dec);
 }
 
 void tpkc_offset(TpkC *self, double raO, double decO) {
@@ -423,3 +445,4 @@ double tpkc_current_position_dec(TpkC *self) {
 }
 
 // ---
+
