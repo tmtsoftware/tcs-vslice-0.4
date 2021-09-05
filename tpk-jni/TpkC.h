@@ -6,9 +6,10 @@
 #include "ScanTask.h"
 #include "csw/csw.h"
 
+// The current position in the current ref sys
 typedef struct {
-    double ra, dec;
-} RaDec;
+    double a, b;
+} CurrentPosition;
 
 
 // Used to access a limited set of TPK functions from Scala/Java
@@ -30,10 +31,10 @@ public:
     void newFK5Target(double ra, double dec);
     void newAzElTarget(double ra, double dec);
 
-    void offset(double raO, double decO);
+    void setOffset(double raO, double decO);
 
-    // Gets the current RaDec position from the mount
-    RaDec current_position();
+    // Gets the current CurrentPosition position from the mount
+    CurrentPosition currentPosition();
 
 private:
     // Publish CSW events

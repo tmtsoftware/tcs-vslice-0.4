@@ -19,11 +19,12 @@ object TpkC {
     def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Unit
     def tpkc_newAzElTarget(self: Pointer, ra: Double, dec: Double): Unit
 
-    def tpkc_offset(self: Pointer, raO: Double, decO: Double): Unit
+    def tpkc_setOffset(self: Pointer, raO: Double, decO: Double): Unit
 
     // XXX JNR does not currently support returning struct by value!
-    def tpkc_current_position_ra(self: Pointer): Double
-    def tpkc_current_position_dec(self: Pointer): Double
+    // Return the current position in the current ref sys (RA, Dec for ICRS, FK5, ...)
+    def tpkc_currentPositionA(self: Pointer): Double
+    def tpkc_currentPositionB(self: Pointer): Double
   }
 
   /**
@@ -46,26 +47,26 @@ class TpkC(val tpkExternC: TpkExternC, val self: Pointer) {
   }
 
   def newICRSTarget(ra: Double, dec: Double): Unit = {
-    tpkExternC.tpkc_newICRSTarget(self, ra, dec);
+    tpkExternC.tpkc_newICRSTarget(self, ra, dec)
   }
   def newFK5Target(ra: Double, dec: Double): Unit = {
-    tpkExternC.tpkc_newFK5Target(self, ra, dec);
+    tpkExternC.tpkc_newFK5Target(self, ra, dec)
   }
   def newAzElTarget(az: Double, el: Double): Unit = {
-    tpkExternC.tpkc_newAzElTarget(self, az, el);
+    tpkExternC.tpkc_newAzElTarget(self, az, el)
   }
 
-  def offset(raO: Double, decO: Double): Unit = {
-    tpkExternC.tpkc_offset(self, raO, decO)
+  def setOffset(raO: Double, decO: Double): Unit = {
+    tpkExternC.tpkc_setOffset(self, raO, decO)
   }
 
-  // The mount's current RA position
-  def current_position_ra(): Double = {
-    tpkExternC.tpkc_current_position_ra(self)
+  // The mount's current RA position  (if using ICRS, FK5)
+  def currentPositionA(): Double = {
+    tpkExternC.tpkc_currentPositionA(self)
   }
 
-  // The mount's current Dec position
-  def current_position_dec(): Double = {
-    tpkExternC.tpkc_current_position_dec(self)
+  // The mount's current Dec position (if using ICRS, FK5)
+  def currentPositionB(): Double = {
+    tpkExternC.tpkc_currentPositionB(self)
   }
 }

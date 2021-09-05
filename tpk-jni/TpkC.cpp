@@ -172,7 +172,7 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     // once New target or Offset Command is being received
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
-        if (! (std::isnan(base1) || std::isnan(cap1))) {
+        if (!(std::isnan(base1) || std::isnan(cap1))) {
             printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
                    el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
             publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
@@ -358,7 +358,7 @@ void TpkC::init() {
 #pragma clang diagnostic pop
 }
 
-// ra and dec are expected in degrees
+// a and b are expected in degrees
 void TpkC::newICRSTarget(double ra, double dec) {
     publishDemands = true;
     tpk::ICRSTarget target(*site, deg2Rad(ra), deg2Rad(dec));
@@ -366,7 +366,7 @@ void TpkC::newICRSTarget(double ra, double dec) {
     enclosure->newTarget(target);
 }
 
-// ra and dec are expected in degrees
+// a and b are expected in degrees
 void TpkC::newFK5Target(double ra, double dec) {
     publishDemands = true;
     tpk::FK5Target target(*site, deg2Rad(ra), deg2Rad(dec));
@@ -383,21 +383,21 @@ void TpkC::newAzElTarget(double az, double el) {
 }
 
 // raO and decO are expected in arcsec
-void TpkC::offset(double raO, double decO) {
+void TpkC::setOffset(double raO, double decO) {
     mount->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
     enclosure->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
 }
 
-RaDec TpkC::current_position() {
+CurrentPosition TpkC::currentPosition() {
 //    tpk::spherical telposXXX = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::AzElRefSys(), 1.0);
 //    double az = rad2Deg(telposXXX.a);
 //    double el = rad2Deg(telposXXX.b);
 //    printf("XXX current pos: az=%g, el=%g\n", az, el);
 
     tpk::spherical telpos = mount->position();
-    RaDec raDec;
-    raDec.ra = rad2Deg(telpos.a);
-    raDec.dec = rad2Deg(telpos.b);
+    CurrentPosition raDec;
+    raDec.a = rad2Deg(telpos.a);
+    raDec.b = rad2Deg(telpos.b);
     return raDec;
 }
 
@@ -429,17 +429,19 @@ void tpkc_newAzElTarget(TpkC *self, double ra, double dec) {
     self->newAzElTarget(ra, dec);
 }
 
-void tpkc_offset(TpkC *self, double raO, double decO) {
-    self->offset(raO, decO);
+void tpkc_setOffset(TpkC *self, double raO, double decO) {
+    self->setOffset(raO, decO);
 }
 
 // XXX JNR does not currently support returning struct by value!
-double tpkc_current_position_ra(TpkC *self) {
-    return self->current_position().ra;
+// Returns the first coordinate of the current pos in the current ref sys (RA of ICRS, FK5, ...)
+double tpkc_currentPositionA(TpkC *self) {
+    return self->currentPosition().a;
 }
 
-double tpkc_current_position_dec(TpkC *self) {
-    return self->current_position().dec;
+// Returns the second coordinate of the current pos in the current ref sys (Dec of ICRS, FK5, ...)
+double tpkc_currentPositionB(TpkC *self) {
+    return self->currentPosition().b;
 }
 
 }

@@ -148,7 +148,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   // Set a telescope offset in arcsec
   private def setOffset(x: Double, y: Double): Unit = {
-    tpkc.offset(x, y)
+    tpkc.setOffset(x, y)
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}
