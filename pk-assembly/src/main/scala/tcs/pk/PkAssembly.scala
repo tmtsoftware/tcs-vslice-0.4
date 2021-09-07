@@ -8,7 +8,7 @@ import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandIssue.{MissingKeyIssue, UnsupportedCommandIssue, WrongInternalStateIssue}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.{AltAzCoord, Coord, EqCoord}
-import csw.params.core.models.{Angle, Id}
+import csw.params.core.models.{Angle, Choice, Id}
 import csw.time.core.models.UTCTime
 
 import scala.concurrent.ExecutionContextExecutor
@@ -36,8 +36,10 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   private val posKey: Key[Coord] = KeyType.CoordKey.make("pos")
 
   // Keys for telescope offsets in arcsec
-  private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
-  private val yCoordinate: Key[Double] = KeyType.DoubleKey.make("Ycoordinate")
+  private val xCoordinateKey: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
+  private val yCoordinateKey: Key[Double] = KeyType.DoubleKey.make("Ycoordinate")
+  // TODO: Add other ref frames, update TCS API in icd database to use enum type to avoid errors
+  private val refFrameKey: Key[Choice] = KeyType.ChoiceKey.make("Refframe", "ICRS", "FK5", "AzEl")
 
   /**
    * This helps in initializing TPK JNI Wrapper in separate thread, so that
@@ -90,8 +92,8 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   private def validateOffset(runId: Id, setup: Setup): ValidateCommandResponse = {
-    if (!(setup.exists(xCoordinate) && setup.exists(yCoordinate)))
-      Invalid(runId, MissingKeyIssue(s"required SetOffset command keys: $xCoordinate or $yCoordinate."))
+    if (!(setup.exists(xCoordinateKey) && setup.exists(yCoordinateKey)))
+      Invalid(runId, MissingKeyIssue(s"required SetOffset command keys: $xCoordinateKey or $yCoordinateKey."))
     else
       Accepted(runId)
   }
@@ -112,13 +114,14 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       setup.commandName.name match {
         case "SlewToTarget" =>
           val pos = setup(posKey).head
-          setOffset(0.0, 0.0)
+          setOffset(0.0, 0.0, "ICRS")
           slewToTarget(runId, pos)
         case "SetOffset" =>
-          val x = setup(xCoordinate).head
-          val y = setup(yCoordinate).head
-          log.info(s"pk assembly: SetOffset $x, $y arcsec")
-          setOffset(x, y)
+          val x        = setup(xCoordinateKey).head
+          val y        = setup(yCoordinateKey).head
+          val refFrame = if (setup.exists(refFrameKey)) setup(refFrameKey).head.name else "ICRS"
+          log.info(s"pk assembly: SetOffset $x, $y arcsec ($refFrame)")
+          setOffset(x, y, refFrame)
           CommandResponse.Completed(runId)
         case _ =>
           CommandResponse.Error(runId, s"Unsupported pk assembly command: ${setup.commandName}")
@@ -147,8 +150,14 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   // Set a telescope offset in arcsec
-  private def setOffset(x: Double, y: Double): Unit = {
-    tpkc.setOffset(x, y)
+  // TODO: Support all ref frames listed in TCS docs
+  private def setOffset(x: Double, y: Double, refFrame: String): Unit = {
+    refFrame match {
+      case "ICRS" => tpkc.setICRSOffset(x, y)
+      case "FK5"  => tpkc.setFK5Offset(x, y)
+      case "AzEl" => tpkc.setAzElOffset(x, y)
+      case x      => log.error(s"Unsupported reference frame for SetOffset: $refFrame")
+    }
   }
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}

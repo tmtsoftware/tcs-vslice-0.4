@@ -19,7 +19,9 @@ object TpkC {
     def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Unit
     def tpkc_newAzElTarget(self: Pointer, ra: Double, dec: Double): Unit
 
-    def tpkc_setOffset(self: Pointer, raO: Double, decO: Double): Unit
+    def tpkc_setICRSOffset(self: Pointer, raO: Double, decO: Double): Unit
+    def tpkc_setFK5Offset(self: Pointer, raO: Double, decO: Double): Unit
+    def tpkc_setAzElOffset(self: Pointer, azO: Double, elO: Double): Unit
 
     // XXX JNR does not currently support returning struct by value!
     // Return the current position in the current ref sys (RA, Dec for ICRS, FK5, ...)
@@ -56,8 +58,14 @@ class TpkC(val tpkExternC: TpkExternC, val self: Pointer) {
     tpkExternC.tpkc_newAzElTarget(self, az, el)
   }
 
-  def setOffset(raO: Double, decO: Double): Unit = {
-    tpkExternC.tpkc_setOffset(self, raO, decO)
+  def setICRSOffset(raO: Double, decO: Double): Unit = {
+    tpkExternC.tpkc_setICRSOffset(self, raO, decO)
+  }
+  def setFK5Offset(raO: Double, decO: Double): Unit = {
+    tpkExternC.tpkc_setFK5Offset(self, raO, decO)
+  }
+  def setAzElOffset(azO: Double, elO: Double): Unit = {
+    tpkExternC.tpkc_setAzElOffset(self, azO, elO)
   }
 
   // The mount's current RA position  (if using ICRS, FK5)

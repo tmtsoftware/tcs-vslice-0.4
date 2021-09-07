@@ -31,7 +31,9 @@ public:
     void newFK5Target(double ra, double dec);
     void newAzElTarget(double ra, double dec);
 
-    void setOffset(double raO, double decO);
+    void setICRSOffset(double raO, double decO);
+    void setFK5Offset(double raO, double decO);
+    void setAzElOffset(double azO, double elO);
 
     // Gets the current CurrentPosition position from the mount
     CurrentPosition currentPosition();

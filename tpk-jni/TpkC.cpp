@@ -382,10 +382,31 @@ void TpkC::newAzElTarget(double az, double el) {
     enclosure->newTarget(target);
 }
 
-// raO and decO are expected in arcsec
-void TpkC::setOffset(double raO, double decO) {
-    mount->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
-    enclosure->setOffset(raO * tpk::TcsLib::as2r, decO * tpk::TcsLib::as2r);
+// Set the offset. raO and decO are expected in arcsec
+void TpkC::setICRSOffset(double raO, double decO) {
+    auto a = raO * tpk::TcsLib::as2r;
+    auto b = decO * tpk::TcsLib::as2r;
+    auto refSys = tpk::ICRefSys();
+    mount->setOffset(a, b, refSys);
+    enclosure->setOffset(a, b, refSys);
+}
+
+// Set the offset. raO and decO are expected in arcsec
+void TpkC::setFK5Offset(double raO, double decO) {
+    auto a = raO * tpk::TcsLib::as2r;
+    auto b = decO * tpk::TcsLib::as2r;
+    auto refSys = tpk::FK5RefSys();
+    mount->setOffset(a, b, refSys);
+    enclosure->setOffset(a, b, refSys);
+}
+
+// Set the offset. azO and elO are expected in arcsec
+void TpkC::setAzElOffset(double azO, double elO) {
+    auto a = azO * tpk::TcsLib::as2r;
+    auto b = elO * tpk::TcsLib::as2r;
+    auto refSys = tpk::AzElRefSys();
+    mount->setOffset(a, b, refSys);
+    enclosure->setOffset(a, b, refSys);
 }
 
 CurrentPosition TpkC::currentPosition() {
@@ -429,8 +450,16 @@ void tpkc_newAzElTarget(TpkC *self, double ra, double dec) {
     self->newAzElTarget(ra, dec);
 }
 
-void tpkc_setOffset(TpkC *self, double raO, double decO) {
-    self->setOffset(raO, decO);
+void tpkc_setICRSOffset(TpkC *self, double raO, double decO) {
+    self->setICRSOffset(raO, decO);
+}
+
+void tpkc_setFK5Offset(TpkC *self, double raO, double decO) {
+    self->setFK5Offset(raO, decO);
+}
+
+void tpkc_setAzElOffset(TpkC *self, double raO, double decO) {
+    self->setAzElOffset(raO, decO);
 }
 
 // XXX JNR does not currently support returning struct by value!
