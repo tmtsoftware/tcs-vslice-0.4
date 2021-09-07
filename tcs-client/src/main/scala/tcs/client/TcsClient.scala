@@ -7,6 +7,7 @@ import akka.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
 import akka.util.Timeout
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
+import csw.event.api.scaladsl.SubscriptionModes.RateLimiterMode
 import csw.event.client.EventServiceFactory
 import csw.location.api.models.ComponentId
 import csw.location.api.models.ComponentType.Assembly
@@ -116,7 +117,8 @@ object TcsClient extends App {
         EventKey(pkAssemblyPrefix, EventName("M3DemandPosition")),
         EventKey(pkAssemblyPrefix, EventName("EnclosureDemandPosition"))
       )
-      subscriber.subscribeActorRef(eventKeys, eventHandler)
+      // TODO: Pass rate as option
+      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.second, RateLimiterMode)
     }
 
     Await.result(locationService.resolve(connection, timeout.duration), timeout.duration) match {
