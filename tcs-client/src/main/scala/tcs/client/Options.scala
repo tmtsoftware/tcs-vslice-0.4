@@ -1,21 +1,20 @@
 package tcs.client
 
 import csw.params.commands.CommandName
-import csw.params.core.models.Coords.EqFrame
-import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.ObsId
 import csw.services.BuildInfo
 
 case class Options(
     command: CommandName = CommandName("SlewToTarget"),
-    ra: String = "12:13:14.15",
-    dec: String = "-30:31:32.3",
-    frame: EqFrame = FK5,
+    ra: Option[String] = None,
+    dec: Option[String] = None,
+    frame: Option[String] = None,
     pmx: Double = 0.0,
     pmy: Double = 0.0,
     x: Double = 0.0,
     y: Double = 0.0,
-    obsId: ObsId = ObsId("2021A-001-123")
+    obsId: Option[ObsId] = None,
+    subscribeToEvents: Boolean = false
 )
 
 object Options {
@@ -31,15 +30,15 @@ object Options {
     } text s"The command to send to the pk assembly (One of: SlewToTarget, SetOffset. Default: ${defaults.command.name})"
 
     opt[String]('r', "ra") valueName "<RA>" action { (x, c) =>
-      c.copy(ra = x)
-    } text s"The RA coordinate for the command: (default: ${defaults.ra})"
+      c.copy(ra = Some(x))
+    } text s"The RA coordinate for the command in the format hh:mm:ss.sss"
 
     opt[String]('d', "dec") valueName "<Dec>" action { (x, c) =>
-      c.copy(dec = x)
-    } text s"The Dec coordinate for the command: (default: ${defaults.dec})"
+      c.copy(dec = Some(x))
+    } text s"The Dec coordinate for the command in the format dd:mm:ss.sss"
 
     opt[String]('f', "frame") valueName "<frame>" action { (x, c) =>
-      c.copy(frame = EqFrame.withName(x))
+      c.copy(frame = Some(x))
     } text s"The frame of refererence for RA, Dec: (default: ${defaults.frame})"
 
     opt[Double]("pmx") valueName "<pmx>" action { (x, c) =>
@@ -59,8 +58,13 @@ object Options {
     } text s"The y offset in arcsec: (default: ${defaults.y})"
 
     opt[String]('o', "obsId") valueName "<id>" action { (x, c) =>
-      c.copy(obsId = ObsId(x))
+      c.copy(obsId = Some(ObsId(x)))
     } text s"The observation id: (default: ${defaults.obsId})"
+
+    // TODO: make value a wildcard for psubscribe
+    opt[Boolean]('s', "subscribe") action { (x, c) =>
+      c.copy(subscribeToEvents = true)
+    } text s"Subscribe to all events published here"
 
     help("help")
     version("version")
