@@ -21,9 +21,8 @@ object Options {
   private val defaults = Options()
 
   // Parser for the command line options
-  // XXX TODO: pass in command name or combine pk-client and pk-event-client commands to one app
-  private val parser = new scopt.OptionParser[Options]("pk-client") {
-    head("pk-client", BuildInfo.version)
+  private val parser = new scopt.OptionParser[Options]("tcs-client") {
+    head("tcs-client", BuildInfo.version)
 
     opt[String]('c', "command") valueName "<command>" action { (x, c) =>
       c.copy(command = CommandName(x))
