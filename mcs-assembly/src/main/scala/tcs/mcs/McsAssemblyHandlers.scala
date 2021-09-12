@@ -83,20 +83,23 @@ object McsAssemblyHandlers {
 
     // Simulate moving towards target
     private def move(target: Angle, current: Angle): Angle = {
-      def percentForDeg(diff: Double) = {
-        log.info(s"XXX diff = $diff deg")
-        val d = Math.abs(diff)
-        if (d < 0.1) 0.5 else if (d > 1.0) 0.1 else 0.075
-      }
-      val diff = target - current
-      current + diff * percentForDeg(diff.toDegree)
+      val rotSpeed = 10.0 // deg/sec
+      val factor   = 0.5
+      val limit    = rotSpeed + factor
+      val diff     = (target - current).toDegree
+      val d        = Math.abs(diff)
+      val sign     = Math.signum(diff)
+      if (d > limit)
+        current + (rotSpeed * sign).degree
+      else
+        current + (diff * factor).degree
     }
 
     // Simulate converging on the target
     private def getNextPos(targetPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
-      val newAlt = move(targetPos.alt, currentPos.alt)
-      val newAz  = move(targetPos.az, currentPos.az)
-      AltAzCoord(targetPos.tag, newAlt, newAz)
+      AltAzCoord(targetPos.tag,
+        move(targetPos.alt, currentPos.alt),
+        move(targetPos.az, currentPos.az))
     }
   }
 
