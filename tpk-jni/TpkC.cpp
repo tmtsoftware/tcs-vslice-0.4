@@ -170,11 +170,13 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     // Below condition will help in preventing TPK Default Demands
     // from getting published and Demand Publishing will start only
     // once New target or Offset Command is being received
+    // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
-        if (!(std::isnan(base1) || std::isnan(cap1))) {
-            printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
-                   el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
+        if (!(std::isnan(base1) || std::isnan(cap1)) && ++publishCounter % 5 == 0) {
+            publishCounter = 0;
+//            printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
+//                   el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
             publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
         }
         publishM3Demand(m3RotationDeg, m3TiltDeg);

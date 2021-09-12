@@ -5,7 +5,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   `tcs-deploy`,
 //  `enc-assembly`,
 //  `enc-hcd`,
-//  `mcs-assembly`,
+  `mcs-assembly`,
 //  `mcs-hcd`,
 )
 
@@ -31,12 +31,12 @@ lazy val `pk-assembly` = project
 //    libraryDependencies ++= Dependencies.`enc-hcd`
 //  )
 //
-//// MCS assembly module
-//lazy val `mcs-assembly` = project
-//  .settings(
-//    libraryDependencies ++= Dependencies.`mcs-assembly`
-//  )
-//
+// MCS assembly module
+lazy val `mcs-assembly` = project
+  .settings(
+    libraryDependencies ++= Dependencies.`mcs-assembly`
+  )
+
 //// MCS HCD module
 //lazy val `mcs-hcd` = project
 //  .settings(
@@ -56,7 +56,7 @@ lazy val `tcs-deploy` = project
     `pk-assembly`,
 //    `enc-assembly`,
 //    `enc-hcd`,
-//    `mcs-assembly`,
+    `mcs-assembly`,
 //    `mcs-hcd`,
   )
   .enablePlugins(CswBuildInfo, DeployApp)

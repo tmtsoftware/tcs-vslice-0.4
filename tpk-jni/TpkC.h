@@ -50,4 +50,5 @@ private:
     tpk::Site *site;
     CswEventServiceContext publisher;
     bool publishDemands = false;
+    int publishCounter = 0;
 };

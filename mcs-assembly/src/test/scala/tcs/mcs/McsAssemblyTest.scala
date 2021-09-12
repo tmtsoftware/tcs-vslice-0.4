@@ -20,7 +20,7 @@ class McsAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer
   }
 
   test("Assembly should be locatable using Location Service") {
-    val connection   = AkkaConnection(ComponentId(Prefix("TCS.TCS MCS Assembly"), ComponentType.Assembly))
+    val connection   = AkkaConnection(ComponentId(Prefix("TCS.MCS_Assembly"), ComponentType.Assembly))
     val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
 
     akkaLocation.connection shouldBe connection
