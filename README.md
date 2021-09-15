@@ -18,10 +18,10 @@ to subscribe to events and can be used to display tables and charts based on the
 
 Note: In order to test this project with the CSW Event Monitor, you will currently need to run 
 the [icdwebserver](https://github.com/tmtsoftware/icd) on localhost and import a slightly
-modified version of the [TCS-Model-Files](https://github.com/tmt-icd/TCS-Model-Files) repositor
+modified version of the [TCS-Model-Files](https://github.com/tmt-icd/TCS-Model-Files) repository
 (branch: `tcs-vslice-04-test`). The branch has been modified to use the CSW altAzCoord type instead
 of separate parameters for alt and az, etc.
-The pk assembly provided here assumes the use of the altAzCoord type and posts events using it.
+The assemblies provided here assumes the use of the altAzCoord type and posts events using it.
 
 ## Dependencies
 
@@ -39,13 +39,13 @@ First follow the instructions in the [csw-c README](https://github.com/tmtsoftwa
 
 ## Running the pk assembly
 
-To run the pk assembly, run: 
+To run the assemblies, run: 
     
     csw-services start  # Note: Make sure you are using the version for csw-4.0.0-M1 or greater
 
     sbt stage
 
-    ./target/universal/stage/bin/tcs-deploy --local ./tcs-deploy/src/main/resources/PkContainer.conf
+    ./target/universal/stage/bin/tcs-deploy --local ./tcs-deploy/src/main/resources/McsEncPkContainer.conf
 
 To send a command to the pk assembly, you can use the tcs-client command line application:
 
@@ -69,12 +69,10 @@ Usage: tcs-client [options]
 
 Example:
 
-    ./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 2:11:12 --dec 78:21:22
+    ./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 05:11:12 --dec 30:21:22
 
 To see the events being fired from the C/C++ code, you can run the tcs-client with the `--subscribe true` option, 
-which causes it to subscribes to events and displays them on stdout:
-
-    ./target/universal/stage/bin/pk-event-client
+which causes it to subscribes to events and displays them on stdout.
 
 Or, for a more user-friendly view, you can run the [CSW Event Monitor](https://github.com/tmtsoftware/csw-event-monitor)
 and display the event values in tables or charts.
