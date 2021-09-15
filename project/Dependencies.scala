@@ -2,6 +2,11 @@ import sbt._
 
 object Dependencies {
 
+  val shared = Seq(
+    CSW.`csw-framework`,
+    Libs.`scalatest` % Test
+  )
+
   val `pk-assembly` = Seq(
     CSW.`csw-framework`,
     Libs.`jnr-ffi`,

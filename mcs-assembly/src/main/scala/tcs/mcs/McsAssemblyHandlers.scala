@@ -9,13 +9,13 @@ import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandResponse._
 import csw.params.commands.ControlCommand
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Angle.double2angle
 import csw.params.core.models.Coords.AltAzCoord
-import csw.params.core.models.{Angle, Id}
+import csw.params.core.models.Id
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 import csw.time.core.models.UTCTime
+import tcs.shared.SimulationUtil
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -29,7 +29,6 @@ import scala.concurrent.ExecutionContextExecutor
  */
 
 object McsAssemblyHandlers {
-  private val mcsAssemblyPrefix        = Prefix(TCS, "MCS_Assembly")
   private val pkAssemblyPrefix         = Prefix(TCS, "PointingKernelAssembly")
   private val pkMountDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
   private val pkEventKeys              = Set(pkMountDemandPosEventKey)
@@ -48,23 +47,23 @@ object McsAssemblyHandlers {
       extends AbstractBehavior[Event](ctx) {
     import EventHandlerActor._
     import cswCtx._
-    private val log = loggerFactory.getLogger
-    // Assuming we are receiving MountDemandPosition events at 20hz, we want to publish at 1hz
+    private val log       = loggerFactory.getLogger
     private val publisher = cswCtx.eventService.defaultPublisher
-    // XXX move at this rate
-    private var count = 0
+    private var count     = 0
 
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
           if (e.eventKey == pkMountDemandPosEventKey) {
+            // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
+            // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
             count = (count + 1) % 100
             if (count == 0) {
               val altAzCoordDemand = e(posKey).head
               maybeCurrentPos match {
                 case Some(currentPos) =>
                   val newPos = getNextPos(altAzCoordDemand, currentPos)
-                  val newEvent = SystemEvent(mcsAssemblyPrefix, mcsTelPosEventName)
+                  val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
                     .add(posKey.set(newPos))
                   publisher.publish(newEvent)
                   new EventHandlerActor(ctx, cswCtx, Some(newPos))
@@ -81,25 +80,18 @@ object McsAssemblyHandlers {
       }
     }
 
-    // Simulate moving towards target
-    private def move(target: Angle, current: Angle): Angle = {
-      val rotSpeed = 10.0 // deg/sec
-      val factor   = 0.5
-      val limit    = rotSpeed + factor
-      val diff     = (target - current).toDegree
-      val d        = Math.abs(diff)
-      val sign     = Math.signum(diff)
-      if (d > limit)
-        current + (rotSpeed * sign).degree
-      else
-        current + (diff * factor).degree
-    }
-
     // Simulate converging on the target
     private def getNextPos(targetPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
-      AltAzCoord(targetPos.tag,
-        move(targetPos.alt, currentPos.alt),
-        move(targetPos.az, currentPos.az))
+      // The max slew for az is 2.5 deg/sec.  Max for el is 1.0 deg/sec
+      val azSpeed = 2.5 // deg/sec
+      val elSpeed = 1.0 // deg/sec
+      val rate    = 1.0 // hz
+      val factor  = 2.0 // Speedup factor for test/demo
+      AltAzCoord(
+        targetPos.tag,
+        SimulationUtil.move(elSpeed * factor, rate, targetPos.alt, currentPos.alt),
+        SimulationUtil.move(azSpeed * factor, rate, targetPos.az, currentPos.az)
+      )
     }
   }
 

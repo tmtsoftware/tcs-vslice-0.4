@@ -179,6 +179,9 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
 //                   el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
             publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
         }
+//        // XXX TEMP
+//        if (std::isnan(base1)) printf("XXX base is NaN\n");
+//        if (std::isnan(cap1)) printf("XXX cap is NaN\n");
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }

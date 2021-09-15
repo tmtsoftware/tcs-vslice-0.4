@@ -1,9 +1,10 @@
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+  shared,
   `pk-assembly`,
   `tcs-client`,
   `tcs-deploy`,
-//  `enc-assembly`,
+  `enc-assembly`,
 //  `enc-hcd`,
   `mcs-assembly`,
 //  `mcs-hcd`,
@@ -13,26 +14,33 @@ lazy val `tcs-vslice-04` = project
   .in(file("."))
   .aggregate(aggregatedProjects: _*)
 
+lazy val shared = project
+  .settings(
+    libraryDependencies ++= Dependencies.shared
+  )
+
 // pk assembly module
 lazy val `pk-assembly` = project
   .settings(
     libraryDependencies ++= Dependencies.`pk-assembly`
   )
 
-//// ENC assembly module
-//lazy val `enc-assembly` = project
-//  .settings(
-//    libraryDependencies ++= Dependencies.`enc-assembly`
-//  )
-//
+// ENC assembly module
+lazy val `enc-assembly` = project
+  .dependsOn(shared)
+  .settings(
+    libraryDependencies ++= Dependencies.`enc-assembly`
+  )
+
 //// ENC HCD module
 //lazy val `enc-hcd` = project
 //  .settings(
 //    libraryDependencies ++= Dependencies.`enc-hcd`
 //  )
-//
+
 // MCS assembly module
 lazy val `mcs-assembly` = project
+  .dependsOn(shared)
   .settings(
     libraryDependencies ++= Dependencies.`mcs-assembly`
   )
@@ -54,7 +62,7 @@ lazy val `tcs-client` = project
 lazy val `tcs-deploy` = project
   .dependsOn(
     `pk-assembly`,
-//    `enc-assembly`,
+    `enc-assembly`,
 //    `enc-hcd`,
     `mcs-assembly`,
 //    `mcs-hcd`,

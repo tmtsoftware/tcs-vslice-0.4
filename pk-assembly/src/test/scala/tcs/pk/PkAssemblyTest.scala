@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer) with AnyFunSuiteLike {
 
-  import frameworkTestKit.frameworkWiring._
+  import frameworkTestKit._
 
   override def beforeAll(): Unit = {
     super.beforeAll()
