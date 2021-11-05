@@ -20,6 +20,7 @@ set(INCLUDE_DIR /usr/local/include)
 include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
+link_directories("/usr/local/lib")
 
 add_library(${PROJECT_NAME} SHARED
         TpkC.cpp
@@ -27,13 +28,15 @@ add_library(${PROJECT_NAME} SHARED
         ScanTask.cpp
         ScanTask.h)
 
-target_link_libraries(${PROJECT_NAME} tpk tcs slalib tinyxml csw m pthread)
+target_link_libraries(${PROJECT_NAME} tpk tcspk slalib tinyxml csw m pthread)
 
 # set LINK_WHAT_YOU_USE to true so that dependent libs are not stripped away for optimization!
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        LINK_WHAT_YOU_USE "TRUE"
+        CXX_STANDARD 11
         PUBLIC_HEADER TpkC.h
         SOVERSION 1)
+
+#        LINK_WHAT_YOU_USE "TRUE"
 
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
