@@ -32,8 +32,9 @@ ScanTask::ScanTask(int waitticks, int prio) :
 
 // Initialise the semaphore (not shared between processes and 
 // initially zero so that the thread is blocked).
-    int ierr = sem_init(&Sem, 0, 0);
-    if (ierr) perror("sem_init");
+//    int ierr = sem_init(&Sem, 0, 0);
+    Sem = sem_open("ScanTask", O_CREAT);
+    if (Sem == SEM_FAILED) perror("sem_open");
 
 // Initialise the mutex used for waiting for the scan to run.
     WaitMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -107,7 +108,7 @@ extern "C" [[noreturn]] void *ScanTask::scheduler(void *) {
                 task->TickCount = task->WaitTicks;
 
                 // Post the semaphore to release the scan.
-                (void) sem_post(&task->Sem);
+                (void) sem_post(task->Sem);
 
             }
 
@@ -152,7 +153,7 @@ void ScanTask::startScheduler() {
     for (;;) {
 
         // Wait for the semaphore to be released.
-        (void) sem_wait(&Sem);
+        (void) sem_wait(Sem);
 
         // Signal that the scan has started.
         pthread_mutex_lock(&WaitMutex);

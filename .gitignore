@@ -13,6 +13,7 @@ cmake-build-debug
 .metals
 *.iml
 /out
+install/
 .idea_modules
 .classpath
 .project

@@ -28,7 +28,21 @@ add_library(${PROJECT_NAME} SHARED
         ScanTask.cpp
         ScanTask.h)
 
-target_link_libraries(${PROJECT_NAME} tpk tcspk slalib tinyxml csw m pthread)
+target_link_libraries(${PROJECT_NAME}
+        tpk
+        tcspk
+        slalib
+        tinyxml
+        csw
+        m
+        pthread)
+
+#if(APPLE)
+#    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
+#else()
+#    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+#endif()
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 # set LINK_WHAT_YOU_USE to true so that dependent libs are not stripped away for optimization!
 set_target_properties(${PROJECT_NAME} PROPERTIES

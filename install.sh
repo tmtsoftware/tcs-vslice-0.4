@@ -2,16 +2,26 @@
 #
 # Creates an install dir with all dependencies, including native C libs
 #
+# shellcheck disable=SC2164
 
 dir=install/tcs-vslice-04
 rm -rf $dir
 
-SYS_LIB_DIR=/lib/x86_64-linux-gnu
-SYS_LIBS="hiredis cbor"
+os="$(uname -s)"
+case "${os}" in
+    Linux*)
+      LIB_SUFFIX=so
+      SYS_LIB_DIR=/lib/x86_64-linux-gnu;;
+    Darwin*)
+      LIB_SUFFIX=dylib
+      SYS_LIB_DIR=/usr/local/lib;;
+    *)
+      echo "Unsupported os: $os"
+esac
 LOCAL_LIB_DIR=/usr/local/lib
-LOCAL_LIBS="tpk-jni tcs tpk slalib tinyxml csw slalib"
-TARGET_LIB_DIR=$dir/lib/`uname`-`arch`
-LIB_SUFFIX=so
+SYS_LIBS="hiredis cbor"
+LOCAL_LIBS="tpk-jni tcs tcspk tpk slalib tinyxml csw slalib"
+TARGET_LIB_DIR=$dir/lib/$os
 
 # Make sure we can find sbt for the build
 hash sbt 2>/dev/null || { echo >&2 "Please install sbt first. Aborting."; exit 1; }
@@ -30,8 +40,9 @@ cp tcs-deploy/README.md $dir/
 
 # Native C dependencies (copy with links)
 for i in $SYS_LIBS; do
-  (cd $SYS_LIB_DIR; tar cf - lib$i.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+  cp $SYS_LIB_DIR/lib$i.$LIB_SUFFIX* $TARGET_LIB_DIR
 done
 for i in $LOCAL_LIBS; do
   (cd $LOCAL_LIB_DIR; tar cf - lib$i.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+  (cd $LOCAL_LIB_DIR; tar cf - lib$i.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
 done

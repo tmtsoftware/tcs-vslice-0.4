@@ -65,7 +65,7 @@ public:
 private:
 
     // The semaphore that the scan task waits on
-    sem_t Sem;
+    sem_t *Sem;
 
     // Mutex to protect the condition variables
     pthread_mutex_t WaitMutex;
