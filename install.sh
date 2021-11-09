@@ -44,5 +44,7 @@ for i in $SYS_LIBS; do
 done
 for i in $LOCAL_LIBS; do
   (cd $LOCAL_LIB_DIR; tar cf - lib$i.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
-  (cd $LOCAL_LIB_DIR; tar cf - lib$i.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+  if test "$os" = "Darwin" ; then
+    (cd $LOCAL_LIB_DIR; tar cf - lib$i.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+  fi
 done
