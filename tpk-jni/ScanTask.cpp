@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <cstdio>
 #include <sys/mman.h>
@@ -34,8 +35,8 @@ ScanTask::ScanTask(int waitticks, int prio) :
 // Initialise the semaphore (not shared between processes and 
 // initially zero so that the thread is blocked).
 //    int ierr = sem_init(&Sem, 0, 0);
-    sem_unlink("/ScanTask");
-    Sem = sem_open("/ScanTask", O_CREAT);
+    sem_unlink("/s");
+    Sem = sem_open("/s", O_CREAT, O_RDWR, 0);
     if (Sem == SEM_FAILED) perror("sem_open");
 
 // Initialise the mutex used for waiting for the scan to run.

@@ -20,7 +20,7 @@ case "${os}" in
 esac
 LOCAL_LIB_DIR=/usr/local/lib
 SYS_LIBS="hiredis cbor"
-LOCAL_LIBS="tpk-jni tcs tcspk tpk slalib tinyxml csw slalib"
+LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib"
 TARGET_LIB_DIR=$dir/lib/$os
 
 # Make sure we can find sbt for the build
@@ -48,3 +48,10 @@ for i in $LOCAL_LIBS; do
     (cd $LOCAL_LIB_DIR; tar cf - lib$i.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
   fi
 done
+
+d=tpk-jni
+(cd $d; make)
+(cd $d/build; tar cf - lib$d.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+if test "$os" = "Darwin" ; then
+   (cd $d/build; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+fi
