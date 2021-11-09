@@ -29,14 +29,14 @@ vector<void *>ScanTask::Tasks;
     initialises the semaphore and the mutexes and creates the 
     scan thread.
 */
-ScanTask::ScanTask(int waitticks, int prio) :
+ScanTask::ScanTask(const char* name, int waitticks, int prio) :
         WaitTicks(waitticks), TickCount(0) {
 
 // Initialise the semaphore (not shared between processes and 
 // initially zero so that the thread is blocked).
 //    int ierr = sem_init(&Sem, 0, 0);
-    sem_unlink("/s");
-    Sem = sem_open("/s", O_CREAT, O_RDWR, 0);
+    sem_unlink(name);
+    Sem = sem_open(name, O_CREAT, 0777, 0);
     if (Sem == SEM_FAILED) perror("sem_open");
 
 // Initialise the mutex used for waiting for the scan to run.
@@ -56,7 +56,7 @@ ScanTask::ScanTask(int waitticks, int prio) :
     }
     pthread_t threadId;
     if (pthread_create(&threadId, &Tattr, startScan, this))
-        perror("pthread_create");
+        perror("pthread_create (ScanTask)");
 
     // Add ourself to the list of scan tasks.
     Tasks.push_back(this);
@@ -144,7 +144,7 @@ void ScanTask::startScheduler() {
     }
     pthread_t threadId;
     int ierr = pthread_create(&threadId, &Tattr, scheduler, nullptr);
-    if (ierr) perror("pthread_create");
+    if (ierr) perror("pthread_create (startScheduler)");
 }
 
 

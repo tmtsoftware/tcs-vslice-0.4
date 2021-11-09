@@ -32,7 +32,7 @@ private:
 
 public:
     SlowScan(tpk::TimeKeeper &t, tpk::Site &s) :
-            ScanTask(6000, 3), time(t), site(s) {};
+            ScanTask("/SlowScan", 6000, 3), time(t), site(s) {};
 };
 
 // The MediumScan class implements the "medium" loop.
@@ -59,7 +59,7 @@ private:
 
 public:
     MediumScan(tpk::TmtMountVt &m, tpk::TmtMountVt &e) :
-            ScanTask(500, 2), mount(m), enclosure(e) {};
+            ScanTask("/MediumScan", 500, 2), mount(m), enclosure(e) {};
 };
 
 // The FastScan class implements the "fast" loop.
@@ -100,7 +100,7 @@ private:
 
 public:
     FastScan(TpkC *pk, tpk::TimeKeeper &t, tpk::TmtMountVt &m, tpk::TmtMountVt &e) :
-            ScanTask(10, 1), tpkC(pk), time(t), mount(m), enclosure(e) {
+            ScanTask("/FastScan", 10, 1), tpkC(pk), time(t), mount(m), enclosure(e) {
 
     };
 };

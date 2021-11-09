@@ -38,7 +38,7 @@ class ScanTask {
 public:
 
     /// Constructor
-    ScanTask(
+    ScanTask(const char* name,  ///< name used for semaphore
             int waitticks,     ///< Number of ticks between executions
             int prio           ///< thread priority
     );
