@@ -14,6 +14,9 @@ endif ()
 
 include(GNUInstallDirs)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # Edit this to point to the top level TPK project source
 set(INCLUDE_DIR /usr/local/include)
 
@@ -35,7 +38,7 @@ target_link_libraries(${PROJECT_NAME}
         tinyxml
         csw
         m
-        pthread)
+        Threads::Threads)
 
 #if(APPLE)
 #    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")

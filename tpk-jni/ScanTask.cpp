@@ -21,7 +21,10 @@ using std::vector;
 
 // Definitions of static data members.
 bool ScanTask::RealTime = false;
-pthread_attr_t ScanTask::Tattr;
+
+// XXX Note: This value must be null (or properly initialized) on MacOS if not being used for scheduling
+pthread_attr_t ScanTask::Tattr  ;
+
 vector<void *>ScanTask::Tasks;
 
 /*
@@ -46,6 +49,9 @@ ScanTask::ScanTask(const char* name, int waitticks, int prio) :
     ScanStart = PTHREAD_COND_INITIALIZER;
     ScanEnd = PTHREAD_COND_INITIALIZER;
 
+    pthread_t threadId;
+    pthread_attr_t* attr = nullptr;
+
 // Create the scan thread.
     if (RealTime) {
         struct sched_param sched{};
@@ -53,9 +59,11 @@ ScanTask::ScanTask(const char* name, int waitticks, int prio) :
                                prio;
         if (pthread_attr_setschedparam(&Tattr, &sched))
             perror("pthread_attr_setschedparam");
+        attr = &Tattr;
     }
-    pthread_t threadId;
-    if (pthread_create(&threadId, &Tattr, startScan, this))
+
+    // XXX Note: Tattr must be null (or properly initialized) on MacOS if not being used for scheduling (above)
+    if (pthread_create(&threadId, attr, startScan, this))
         perror("pthread_create (ScanTask)");
 
     // Add ourself to the list of scan tasks.
@@ -134,16 +142,18 @@ extern "C" [[noreturn]] void *ScanTask::scheduler(void *) {
 //   Starts the scheduler thread.
 
 void ScanTask::startScheduler() {
+    pthread_attr_t* attr = nullptr;
 
-// Create the scheduler thread with the highest possible priority.
+   // Create the scheduler thread with the highest possible priority.
     if (RealTime) {
         struct sched_param sched{};
         sched.sched_priority = sched_get_priority_max(SCHED_FIFO);
         int ierr = pthread_attr_setschedparam(&Tattr, &sched);
         if (ierr) perror("pthread_attr_setschedparam");
+        attr = &Tattr;
     }
     pthread_t threadId;
-    int ierr = pthread_create(&threadId, &Tattr, scheduler, nullptr);
+    int ierr = pthread_create(&threadId, attr, scheduler, nullptr);
     if (ierr) perror("pthread_create (startScheduler)");
 }
 

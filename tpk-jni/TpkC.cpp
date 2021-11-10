@@ -72,7 +72,6 @@ private:
 
 
     void scan() override {
-
         // Update the time
         time.update();
 
