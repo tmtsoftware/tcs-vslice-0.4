@@ -26,7 +26,10 @@ The assemblies provided here assumes the use of the altAzCoord type and posts ev
 ## Dependencies
 
 Currently this project requires that a number of shared libraries are installed in a known location (default: /usr/local/lib),
-which must also be included (on Linux) in the LD_LIBRARY_PATH environment variable.
+which must also be included:
+
+* On Linux: in the LD_LIBRARY_PATH environment variable
+* On MacOS: in the DYLD_FALLBACK_LIBRARY_PATH environment variable
 
 Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
 First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid). You can also use `make PREFIX=/my/dir` to change the installation directory.
@@ -36,6 +39,14 @@ First follow the instructions in the [csw-c README](https://github.com/tmtsoftwa
 * [CSW C API (csw-c)](https://github.com/tmtsoftware/csw-c)
 
 * [tpk-jni (a C/C++ based subproject of this project)](tpk-jni)
+
+## Making a release dir: install.sh
+
+The install.sh script creates an OS specific directory with all of the JVM and native dependencies.
+It assumes that the native shared libs for TPK and csw-c are already installed in /usr/local/lib
+and copies them to install/tcs-vslice-04/lib/`uname`, where `uname` is Darwin for MacOS, or Linux.
+
+This was tested on Ubuntu-21.04 and MacOS-12.
 
 ## Running the pk assembly
 
@@ -68,8 +79,10 @@ Usage: tcs-client [options]
 ```
 
 Example:
-
-    ./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 05:11:12 --dec 30:21:22
+```
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 10:11:12 --dec 15:21:22
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 12:11:12 --dec 13:21:22
+```
 
 To see the events being fired from the C/C++ code, you can run the tcs-client with the `--subscribe true` option, 
 which causes it to subscribes to events and displays them on stdout.
@@ -79,5 +92,17 @@ and display the event values in tables or charts.
 This requires also running the following services:
 
 * __esw-services__ start (from [esw](https://github.com/tmtsoftware/esw))
-* __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd))
+* __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd)) - with slightly
+  modified version of the [TCS-Model-Files](https://github.com/tmt-icd/TCS-Model-Files) repository
+  (branch: `tcs-vslice-04-test`) imported manually
+
+In the current version these events are published:
+
+* TCS.PointingKernelAssembly.M3DemandPosition
+* TCS.PointingKernelAssembly.EnclosureDemandPosition
+* TCS.PointingKernelAssembly.MountDemandPosition
+* TCS.MCSAssembly.TCS Telescope Position
+* TCS.ENCAssembly.CurrentPosition
+
+The event prefixes and names are based on the TCS API as defined in the above TCS-Model-Files repo.
 
