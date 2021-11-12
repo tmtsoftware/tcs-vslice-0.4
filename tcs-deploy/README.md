@@ -51,8 +51,10 @@ Usage: tcs-client [options]
 ```
 
 Example:
-
-    bin/tcs-client -c SlewToTarget --ra 05:11:12 --dec 30:21:22
+```
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 10:11:12 --dec 15:21:22
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 12:11:12 --dec 13:21:22
+```
 
 To see the events being fired from the C/C++ code, you can run the tcs-client with the `--subscribe true` option,
 which causes it to subscribes to events and displays them on stdout.
@@ -62,5 +64,17 @@ and display the event values in tables or charts.
 This requires also running the following services:
 
 * __esw-services__ start (from [esw](https://github.com/tmtsoftware/esw))
-* __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd))
+* __icdwebserver__ (from [icd](https://github.com/tmtsoftware/icd)) - with slightly
+  modified version of the [TCS-Model-Files](https://github.com/tmt-icd/TCS-Model-Files) repository
+  (branch: `tcs-vslice-04-test`) imported manually
+
+In the current version these events are published:
+
+* TCS.PointingKernelAssembly.M3DemandPosition
+* TCS.PointingKernelAssembly.EnclosureDemandPosition
+* TCS.PointingKernelAssembly.MountDemandPosition
+* TCS.MCSAssembly.TCS Telescope Position
+* TCS.ENCAssembly.CurrentPosition
+
+The event prefixes and names are based on the TCS API as defined in the above TCS-Model-Files repo.
 
