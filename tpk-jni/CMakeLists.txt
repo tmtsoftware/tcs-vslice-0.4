@@ -12,51 +12,7 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
-include(GNUInstallDirs)
+add_subdirectory (src)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
-
-# Edit this to point to the top level TPK project source
-set(INCLUDE_DIR /usr/local/include)
-
-include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
-find_package(JNI REQUIRED)
-include_directories(${JNI_INCLUDE_DIRS} .)
-link_directories("/usr/local/lib")
-
-add_library(${PROJECT_NAME} SHARED
-        TpkC.cpp
-        TpkC.h
-        ScanTask.cpp
-        ScanTask.h)
-
-target_link_libraries(${PROJECT_NAME}
-        tpk
-        tcspk
-        slalib
-        tinyxml
-        csw
-        m
-        Threads::Threads)
-
-#if(APPLE)
-#    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
-#else()
-#    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
-#endif()
-#set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-
-# set LINK_WHAT_YOU_USE to true so that dependent libs are not stripped away for optimization!
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        CXX_STANDARD 11
-        PUBLIC_HEADER TpkC.h
-        SOVERSION 1)
-
-#        LINK_WHAT_YOU_USE "TRUE"
-
-install(TARGETS ${PROJECT_NAME}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME})
+enable_testing ()
+add_subdirectory (test)

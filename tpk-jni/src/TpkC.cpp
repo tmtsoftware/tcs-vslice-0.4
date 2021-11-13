@@ -1,6 +1,7 @@
 #include "TpkC.h"
 
 #include <ctime>
+#include <cmath>
 #include "tpk/UnixClock.h"
 #include "csw/csw.h"
 
@@ -121,50 +122,42 @@ TpkC::~TpkC() {
     delete enclosure;
 }
 
-static const double ci = deg2Rad(32.5); // degrees
+static const double ci = deg2Rad(32.5);
 static const double ciz = deg2Rad(90.0 - 32.5);
 static const double PI2 = M_PI * 2;
 
 
-// XXX TODO: Make unit test
-//testXXX(0.0, 90.0);
-//testXXX(26.0, 164.1);
-//testXXX(27.0, 157.6);
-//testXXX(59.0, 87.6);
-//testXXX(60.0, 86.05);
-//testXXX(90.0, 57.5);
-//testXXX(180.0, 25.0);
-//static void testXXX(double ecsElDeg, double expected) {
-//    double el = deg2Rad(ecsElDeg);
-//    if ((el > PI2) || (el < 0)) {
-//        printf("XXX test: el out of range: %g rad (%g deg)\n", el, ecsElDeg);
-//        el = 0;
-//    }
-//    double cap1 = acos(tan(el - ciz) / tan(ci));
-//    printf("XXX test el=%g, cap=%g (expected: %g): \n", ecsElDeg, rad2Deg(cap1), expected);
-//}
+// From table:
+// cap  =ROUND(DEGREES(ACOS(TAN(RADIANS(el-57.5)) / TAN(RADIANS(32.5)))),1)
+// base =ROUND(DEGREES(ATAN(SIN(RADIANS(cap)/COS(RADIANS(32.5))*(1-COS(RADIANS(cap)))))),1)
+// ???  =ROUND(DEGREES(ACOS(TAN(RADIANS(A2-57.5+1)) / TAN(RADIANS(32.5)))),1)
 
+// Calculates the base and cap values
+void TpkC::calculateBaseAndCap(double ecsAzDeg, double ecsElDeg, double &baseDeg, double &capDeg) {
+    double azRad = deg2Rad(ecsAzDeg);
+    double elRad = deg2Rad(ecsElDeg);
+
+    if ((elRad > PI2) || (elRad < 0)) {
+        elRad = 0;
+    }
+    if ((azRad > PI2) || (azRad < 0)) {
+        azRad = 0;
+    }
+
+    // Convert Az, El into base & cap coordinates
+    double capRad = acos(tan(elRad - ciz) / tan(ci));
+    // check for division by zero from altitude angle at 90 degrees
+    double azShift = (elRad == M_PI_2) ? 0.0 : atan(sin(capRad / cos(ci) * (1 - cos(capRad))));
+    double baseRad = ((azRad + azShift) > PI2) ? (azRad + azShift) - PI2 : azRad + azShift;
+    baseDeg = rad2Deg(baseRad);
+    capDeg = rad2Deg(capRad);
+}
 
 // Called when there are new demands: All args are in deg
 void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double ecsElDeg, double m3RotationDeg,
                       double m3TiltDeg) {
-    double az = deg2Rad(ecsAzDeg);
-    double el = deg2Rad(ecsElDeg);
-
-    if ((el > PI2) || (el < 0)) {
-//        printf("XXX el out of range: %g rad (%g deg)\n", el, ecsElDeg);
-        el = 0;
-    }
-    if ((az > PI2) || (az < 0)) {
-//        printf("XXX az out of range: %g rad (%g deg)\n", az, ecsAzDeg);
-        az = 0;
-    }
-
-    // Convert eAz, eEl into base & cap coordinates
-    double cap1 = acos(tan(el - ciz) / tan(ci));
-    // check for division by zero from altitude angle at 90 degrees
-    double azShift = (el == M_PI_2) ? 0.0 : atan(sin(cap1) / cos(ci) * (1 - cos(cap1)));
-    double base1 = ((az + azShift) > PI2) ? (az + azShift) - PI2 : az + azShift;
+    double baseDeg, capDeg;
+    calculateBaseAndCap(ecsAzDeg, ecsElDeg, baseDeg, capDeg);
 
     // Below condition will help in preventing TPK Default Demands
     // from getting published and Demand Publishing will start only
@@ -172,15 +165,10 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
-        if (!(std::isnan(base1) || std::isnan(cap1)) && ++publishCounter % 5 == 0) {
+        if (!(std::isnan(baseDeg) || std::isnan(capDeg)) && ++publishCounter % 5 == 0) {
             publishCounter = 0;
-//            printf("XXX publishEcsDemand el = %g rad (%g deg), az = %g rad (%g deg), cap = %g rad (%g deg), base = %g rad (%g deg)\n",
-//                   el, ecsElDeg, az, ecsAzDeg, cap1, rad2Deg(cap1), base1, rad2Deg(base1));
-            publishEcsDemand(rad2Deg(base1), rad2Deg(cap1));
+            publishEcsDemand(rad2Deg(baseDeg), rad2Deg(capDeg));
         }
-//        // XXX TEMP
-//        if (std::isnan(base1)) printf("XXX base is NaN\n");
-//        if (std::isnan(cap1)) printf("XXX cap is NaN\n");
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }
@@ -414,11 +402,6 @@ void TpkC::setAzElOffset(double azO, double elO) {
 }
 
 CurrentPosition TpkC::currentPosition() {
-//    tpk::spherical telposXXX = mount->xy2sky(tpk::xycoord(0.0, 0.0), tpk::AzElRefSys(), 1.0);
-//    double az = rad2Deg(telposXXX.a);
-//    double el = rad2Deg(telposXXX.b);
-//    printf("XXX current pos: az=%g, el=%g\n", az, el);
-
     tpk::spherical telpos = mount->position();
     CurrentPosition raDec;
     raDec.a = rad2Deg(telpos.a);

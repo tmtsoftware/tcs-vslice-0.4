@@ -51,7 +51,7 @@ done
 
 d=tpk-jni
 (cd $d; make)
-(cd $d/build; tar cf - lib$d.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+(cd $d/build/src; tar cf - lib$d.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
 if test "$os" = "Darwin" ; then
-   (cd $d/build; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+   (cd $d/build/src; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
 fi
