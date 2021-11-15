@@ -6,7 +6,7 @@ as defined the the [ICD Database](https://github.com/tmtsoftware/icd).
 It makes use of the Scala based CSW framework, and also links with native C/C++ code
 (using [JNR - Java Native Runtime](https://github.com/jnr/jnr-ffi/blob/master/docs/README.md)).
 For example, the pk (Pointing Kernel) assembly receives a `SlewToTarget` command and then
-makes a call to C/C++ code that calls [TPK](https://github.com/tmtsoftware/TPK) routines to set a target and 
+makes a call to C/C++ code that calls TPK routines to set a target and 
 then posts events using the [CSW C API](https://github.com/tmtsoftware/csw-c).
 
 You can subscribe to those events for test purposes using the [tcs-client](tcs-client) command line subproject,
@@ -34,7 +34,7 @@ which must also be included:
 Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
 First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid). You can also use `make PREFIX=/my/dir` to change the installation directory.
 
-* [TPK (branch: add-cmake-files)](https://github.com/tmtsoftware/TPK/tree/add-cmake-files)
+* TPK (branch: add-cmake-files)]
 
 * [CSW C API (csw-c)](https://github.com/tmtsoftware/csw-c)
 
