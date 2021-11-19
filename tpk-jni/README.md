@@ -2,7 +2,7 @@
 
 This directory contains native C++ code that provides a shared library that is loaded at runtime by the TCS pk assembly.
 It depends on the [CSW C API](https://github.com/tmtsoftware/csw-c) for publishing events 
-as well shared libraries from the (TMT private repo) [TPK](https://github.com/tmtsoftware/TPK) 
+as well shared libraries from the (TMT private repo) TPK. 
 used for calculating mount and enclosure positions.
 
 ## Building
