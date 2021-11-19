@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 project(tpk-jni LANGUAGES CXX VERSION 0.1)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 enable_language(CXX)
 
 set(DEFAULT_BUILD_TYPE "Release")

@@ -19,7 +19,7 @@ case "${os}" in
       echo "Unsupported os: $os"
 esac
 LOCAL_LIB_DIR=/usr/local/lib
-SYS_LIBS="hiredis cbor"
+SYS_LIBS="hiredis cbor zlog uuid"
 LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib"
 TARGET_LIB_DIR=$dir/lib/$os
 
@@ -54,4 +54,11 @@ d=tpk-jni
 (cd $d/build/src; tar cf - lib$d.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
 if test "$os" = "Darwin" ; then
    (cd $d/build/src; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+   # Fix rpath on MacOS
+   brew_install=/usr/local/opt
+   lib_dir='@rpath'
+   install_name_tool -change $brew_install/hiredis/lib/libhiredis.1.0.0.dylib $lib_dir/libhiredis.dylib $TARGET_LIB_DIR/libcsw.dylib
+   install_name_tool -change $brew_install/libcbor/lib/libcbor.0.dylib $lib_dir/libcbor.dylib $TARGET_LIB_DIR/libcsw.dylib
+   install_name_tool -change $brew_install/zlog/lib/libzlog.1.2.dylib $lib_dir/libzlog.dylib $TARGET_LIB_DIR/libcsw.dylib
+   install_name_tool -change $brew_install/ossp-uuid/lib/libuuid.16.dylib $lib_dir/libuuid.dylib $TARGET_LIB_DIR/libcsw.dylib
 fi
