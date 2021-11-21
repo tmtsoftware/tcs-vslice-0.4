@@ -55,10 +55,8 @@ d=tpk-jni
 if test "$os" = "Darwin" ; then
    (cd $d/build/src; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
    # Fix rpath on MacOS
-   brew_install=/usr/local/opt
-   lib_dir='@rpath'
-   install_name_tool -change $brew_install/hiredis/lib/libhiredis.1.0.0.dylib $lib_dir/libhiredis.dylib $TARGET_LIB_DIR/libcsw.dylib
-   install_name_tool -change $brew_install/libcbor/lib/libcbor.0.dylib $lib_dir/libcbor.dylib $TARGET_LIB_DIR/libcsw.dylib
-   install_name_tool -change $brew_install/zlog/lib/libzlog.1.2.dylib $lib_dir/libzlog.dylib $TARGET_LIB_DIR/libcsw.dylib
-   install_name_tool -change $brew_install/ossp-uuid/lib/libuuid.16.dylib $lib_dir/libuuid.dylib $TARGET_LIB_DIR/libcsw.dylib
+   for i in $SYS_LIBS ; do
+     libpath=`otool -L $SYS_LIB_DIR/libcsw.dylib | grep $i | awk '{print $1;}'`
+     install_name_tool -change $libpath '@rpath'/lib$i.dylib $TARGET_LIB_DIR/libcsw.dylib
+   done
 fi
