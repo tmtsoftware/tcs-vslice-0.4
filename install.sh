@@ -19,8 +19,8 @@ case "${os}" in
       echo "Unsupported os: $os"
 esac
 LOCAL_LIB_DIR=/usr/local/lib
-SYS_LIBS="hiredis cbor zlog uuid"
-LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib"
+SYS_LIBS="hiredis cbor uuid"
+LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib zlog"
 TARGET_LIB_DIR=$dir/lib/$os
 
 # Make sure we can find sbt for the build
