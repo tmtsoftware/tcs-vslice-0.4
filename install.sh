@@ -7,20 +7,24 @@
 dir=install/tcs-vslice-04
 rm -rf $dir
 
+# Note that zlog is from source on Linux, brew on Mac
+SYS_LIBS="hiredis cbor uuid"
+LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib"
+
 os="$(uname -s)"
 case "${os}" in
     Linux*)
       LIB_SUFFIX=so
+      LOCAL_LIBS="$LOCAL_LIBS zlog"
       SYS_LIB_DIR=/lib/x86_64-linux-gnu;;
     Darwin*)
       LIB_SUFFIX=dylib
+      SYS_LIBS="$SYS_LIBS zlog"
       SYS_LIB_DIR=/usr/local/lib;;
     *)
       echo "Unsupported os: $os"
 esac
 LOCAL_LIB_DIR=/usr/local/lib
-SYS_LIBS="hiredis cbor uuid"
-LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib zlog"
 TARGET_LIB_DIR=$dir/lib/$os
 
 # Make sure we can find sbt for the build
