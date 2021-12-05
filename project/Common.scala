@@ -1,3 +1,4 @@
+import com.typesafe.sbt.packager.Keys.{dockerBaseImage, dockerCommands, dockerExposedPorts, maintainer}
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtOnCompile
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
@@ -44,4 +45,14 @@ object Common extends AutoPlugin {
     case Some("false") ⇒ false
     case _             ⇒ true
   }
+
+  // Customize the Docker install
+  lazy val dockerSettings = Seq(
+    maintainer := "TMT Software",
+    dockerExposedPorts ++= Seq(9753),
+    dockerBaseImage := "ubuntu:21.04",
+//    dockerCommands := Seq(
+//
+//    )
+  )
 }
