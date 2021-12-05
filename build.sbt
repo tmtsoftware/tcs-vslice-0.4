@@ -70,8 +70,6 @@ lazy val `tcs-deploy` = project
   .enablePlugins(CswBuildInfo, DeployApp)
   .settings(
     libraryDependencies ++= Dependencies.TcsDeploy,
-    NativePackagerKeys.bashScriptExtraDefines ++= Seq(
-      "export LD_LIBRARY_PATH=$lib_dir/`uname`; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH",
-      "export JAVA_OPTS=-Dcsw-remote-actor-system.akka.remote.artery.canonical.port=9753")
+    NativePackagerKeys.bashScriptExtraDefines += "export LD_LIBRARY_PATH=$lib_dir/`uname`; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH"
   )
   .settings(Common.dockerSettings: _*)
