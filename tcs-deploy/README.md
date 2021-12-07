@@ -32,7 +32,7 @@ To run the assemblies, run:
 
 To run the pk assembly only, use the PkStandalone.conf file instead:
 
-    bin/tcs-deploy --local conf/PkStandalone.conf
+    bin/tcs-deploy --standalone --local conf/PkStandalone.conf
 
 To send a command to the pk assembly, you can use the tcs-client command line application:
 
@@ -56,8 +56,8 @@ Usage: tcs-client [options]
 
 Example:
 ```
-./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 10:11:12 --dec 15:21:22
-./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 12:11:12 --dec 13:21:22
+bin/tcs-client -c SlewToTarget --ra 10:11:12 --dec 15:21:22
+bin/tcs-client -c SlewToTarget --ra 12:11:12 --dec 13:21:22
 ```
 
 To see the events being fired from the C/C++ code, you can run the tcs-client with the `--subscribe true` option,

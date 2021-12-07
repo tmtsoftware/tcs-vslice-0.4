@@ -64,3 +64,14 @@ if test "$os" = "Darwin" ; then
      install_name_tool -change $libpath '@rpath'/lib$i.dylib $TARGET_LIB_DIR/libcsw.dylib
    done
 fi
+
+# Make docker image
+cp tcs-deploy/Dockerfile install/tcs-vslice-04/
+(cd install/tcs-vslice-04/; docker build -t abrighton/tcs-deploy:latest .)
+
+# Note: Run with:
+# docker run --network host -d -P -p 9753:9753 -p 7654:7654 -e INTERFACE_NAME=$INTERFACE_NAME --name tcs-deploy abrighton/tcs-deploy
+# Stop with:
+# docker stop tcs-deploy
+# Remove with:
+# docker rm tcs-deploy
