@@ -12,10 +12,10 @@ user=$USER
 # version tag
 version=latest
 
-#./install.sh
+sbt tcs-deploy/docker:publishLocal || exit 1
 sbt tcs-deploy/docker:stage || exit 1
 cd tcs-deploy/target/docker/stage
-DOCKER_BUILDKIT=1 docker build -t $user/tcs-deploy:$version .  || exit 1
+#DOCKER_BUILDKIT=1 docker build -t $user/tcs-deploy:$version .  || exit 1
 
 # Push to docker hub...
 # docker push $user/tcs-deploy:latest

@@ -1,4 +1,5 @@
 import com.typesafe.sbt.packager.Keys.{dockerBaseImage, dockerCommands, dockerExposedPorts, maintainer}
+import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 import org.scalafmt.sbt.ScalafmtPlugin.autoImport.scalafmtOnCompile
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
@@ -15,7 +16,6 @@ object Common extends AutoPlugin {
     organizationName := "TMT",
     scalaVersion := Libs.ScalaVersion,
     organizationHomepage := Some(url("http://www.tmt.org")),
-
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -41,18 +41,29 @@ object Common extends AutoPlugin {
     if (formatOnCompile) scalafmtOnCompile := true else scalafmtOnCompile := false
   )
 
-  private def formatOnCompile = sys.props.get("format.on.compile") match {
-    case Some("false") ⇒ false
-    case _             ⇒ true
-  }
+  private def formatOnCompile =
+    sys.props.get("format.on.compile") match {
+      case Some("false") ⇒ false
+      case _             ⇒ true
+    }
 
   // Customize the Docker install
   lazy val dockerSettings = Seq(
     maintainer := "TMT Software",
     dockerExposedPorts ++= Seq(9753),
     dockerBaseImage := "ubuntu:21.04",
-//    dockerCommands := Seq(
-//
-//    )
+    // See https://github.com/sbt/sbt-native-packager/issues/1417, replace with dockerCommandsPrepend later
+    dockerCommands := dockerCommands.value.flatMap {
+      case Cmd("USER", args @ _*) if args.contains("1001:0") =>
+        Seq(
+          Cmd("RUN", "apt update -y"),
+          Cmd("RUN", "apt install -y openjdk-11-jdk libcbor-dev uuid-dev libhiredis-dev"),
+          Cmd("USER", args: _*)
+        )
+      case cmd => Seq(cmd)
+    },
+    dockerCommands ++= Seq(
+//      Cmd("RUN", "apt install -y libcbor-dev uuid-dev libhiredis-dev"),
+    )
   )
 }

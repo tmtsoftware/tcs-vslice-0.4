@@ -1,4 +1,3 @@
-
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   shared,
   `pk-assembly`,
@@ -6,7 +5,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   `tcs-deploy`,
   `enc-assembly`,
 //  `enc-hcd`,
-  `mcs-assembly`,
+  `mcs-assembly`
 //  `mcs-hcd`,
 )
 
@@ -64,12 +63,14 @@ lazy val `tcs-deploy` = project
     `pk-assembly`,
     `enc-assembly`,
 //    `enc-hcd`,
-    `mcs-assembly`,
+    `mcs-assembly`
 //    `mcs-hcd`,
   )
   .enablePlugins(CswBuildInfo, DeployApp)
   .settings(
     libraryDependencies ++= Dependencies.TcsDeploy,
-    NativePackagerKeys.bashScriptExtraDefines += "export LD_LIBRARY_PATH=$lib_dir/`uname`; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    NativePackagerKeys.bashScriptExtraDefines ++= Seq(
+      "export LD_LIBRARY_PATH=$lib_dir/`uname`; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH",
+      "export JAVA_OPTS=-Dcsw-remote-actor-system.akka.remote.artery.canonical.port=9753")
   )
   .settings(Common.dockerSettings: _*)

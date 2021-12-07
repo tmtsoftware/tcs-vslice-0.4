@@ -6,11 +6,11 @@ import sbt._
 import scala.util.control.NonFatal
 
 object Libs {
-  val ScalaVersion = "2.13.6"
+  val ScalaVersion = "2.13.7"
 
-  val `jnr-ffi` = "com.github.jnr" % "jnr-ffi" % "2.2.4"
+  val `jnr-ffi` = "com.github.jnr" % "jnr-ffi" % "2.2.10"
 
-  val `scalatest`     = "org.scalatest"          %% "scalatest"     % "3.2.9"    //Apache License 2.0
+  val `scalatest`     = "org.scalatest"          %% "scalatest"     % "3.2.10"    //Apache License 2.0
   val `scala-async`   = "org.scala-lang.modules" %% "scala-async"   % "1.0.0-M1" //BSD 3-clause "New" or "Revised" License
   val `mockito-scala` = "org.mockito"            %% "mockito-scala" % "1.16.0"
 }

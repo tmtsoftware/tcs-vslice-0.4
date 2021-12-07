@@ -27,8 +27,12 @@ The assemblies provided here assumes the use of the altAzCoord type and posts ev
 
 To run the assemblies, run:
 
-    csw-services start  # Note: Make sure you are using the version for csw-4.0.0-M1 or greater
+    csw-services start  # Note: Make sure you are using the version for csw-4.0.0
     bin/tcs-deploy --local conf/McsEncPkContainer.conf
+
+To run the pk assembly only, use the PkStandalone.conf file instead:
+
+    bin/tcs-deploy --local conf/PkStandalone.conf
 
 To send a command to the pk assembly, you can use the tcs-client command line application:
 
