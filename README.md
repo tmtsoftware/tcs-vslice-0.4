@@ -37,7 +37,10 @@ First follow the instructions in the [csw-c README](https://github.com/tmtsoftwa
 
 * [tpk-jni (a C/C++ based subproject of this project)](tpk-jni)
 
-## Making a release dir: install.sh
+## MacOS-12 (Monterey, Intel) Homebrew installation of shared library dependencies
+
+
+## Making a release dir: install.sh (For Linux)
 
 The install.sh script creates an OS specific directory with all of the JVM and native dependencies.
 It assumes that the native shared libs for TPK and csw-c are already installed in /usr/local/lib
