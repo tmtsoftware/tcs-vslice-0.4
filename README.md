@@ -39,6 +39,20 @@ First follow the instructions in the [csw-c README](https://github.com/tmtsoftwa
 
 ## MacOS-12 (Monterey, Intel) Homebrew installation of shared library dependencies
 
+In order to make it easier to test under MacOS, a Homebrew installation of the necessary
+shared libraries for the TCS pk assembly is now available for MacOS-12 (Intel CPU).
+Note that these libraries are precompiled, since the TPK dependency is from a private GitHub repo, 
+making it imposible to build on a user's system without the necessary permissions.
+The `brew-zip.sh` script is used to build the zip file used by the brew tap, but requires
+that all the sources are available (in ../csw- and ../../TPK).
+
+To install the shared library dependencies, run:
+```
+  brew tap abrighton/tcs-vslice
+  brew install tcs-vslice
+```
+
+After that, you should be able to run the pk assembly or containers using it as described below. 
 
 ## Making a release dir: install.sh (For Linux)
 
@@ -46,7 +60,8 @@ The install.sh script creates an OS specific directory with all of the JVM and n
 It assumes that the native shared libs for TPK and csw-c are already installed in /usr/local/lib
 and copies them to install/tcs-vslice-04/lib/`uname`, where `uname` is Darwin for MacOS, or Linux.
 
-This was tested on Ubuntu-21.04 and MacOS-12.
+This was tested on Ubuntu-21.04 and MacOS-12 (Due to security issues, it is recommended to use
+the brew install on Macs).
 
 ## Running the pk assembly
 
