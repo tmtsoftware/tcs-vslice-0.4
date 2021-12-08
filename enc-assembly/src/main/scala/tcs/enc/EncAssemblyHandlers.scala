@@ -58,10 +58,10 @@ object EncAssemblyHandlers {
     private val publisher = cswCtx.eventService.defaultPublisher
 
     override def onMessage(msg: Event): Behavior[Event] = {
-//      log.info(s"XXX received $msg")
+      log.info(s"XXX received $msg")
       msg match {
         case e: SystemEvent =>
-          if (e.eventKey == pkEnclosureDemandPosEventKey) {
+          if (e.eventKey == pkEnclosureDemandPosEventKey && e.contains(baseDemandKey)) {
             val demandBase = e(baseDemandKey).head
             val demandCap  = e(capDemandKey).head
             (maybeCurrentBase, maybeCurrentCap) match {

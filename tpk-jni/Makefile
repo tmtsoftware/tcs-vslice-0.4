@@ -10,7 +10,7 @@ all:
 	(cd $(BUILD_DIR); cmake .. -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$(PREFIX); cmake --build .  --verbose)
 
 # May require sudo
-install:
+install: all
 	(cd $(BUILD_DIR); $(MAKE) install)
 
 clean:

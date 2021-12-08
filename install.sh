@@ -9,7 +9,7 @@ rm -rf $dir
 
 # Note that zlog is from source on Linux, brew on Mac
 SYS_LIBS="hiredis cbor uuid"
-LOCAL_LIBS="tcs tcspk tpk slalib tinyxml csw slalib"
+LOCAL_LIBS="tcspk tpk slalib tinyxml csw"
 
 os="$(uname -s)"
 case "${os}" in

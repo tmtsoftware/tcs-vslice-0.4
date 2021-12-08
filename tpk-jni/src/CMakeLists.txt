@@ -29,7 +29,7 @@ target_link_libraries(${PROJECT_NAME}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD 11
-        PUBLIC_HEADER src/TpkC.h
+        PUBLIC_HEADER TpkC.h
         SOVERSION 1)
 
 install(TARGETS ${PROJECT_NAME}
