@@ -70,5 +70,5 @@ lazy val `tcs-deploy` = project
   .enablePlugins(CswBuildInfo, DeployApp)
   .settings(
     libraryDependencies ++= Dependencies.TcsDeploy,
-    NativePackagerKeys.bashScriptExtraDefines += "export LD_LIBRARY_PATH=/usr/local/lib; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    NativePackagerKeys.bashScriptExtraDefines += "export LD_LIBRARY_PATH=$lib_dir/`uname`:/usr/local/lib; export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH"
   )
