@@ -1,6 +1,6 @@
 #!/bin/sh
 # Creates a zip file containing the native C shared libraries that can be used in a Homebrew formula
-# Note: This script assumes that you did a "make; sudo make install" for each of: tpk (private!), csw-c, ./tpk-jni,
+# Note: This script does a "make; sudo make install" for each of: tpk (private!), csw-c, ./tpk-jni,
 # so that the shared libs are all installed in /usr/local/lib
 
 # shellcheck disable=SC2164
