@@ -58,7 +58,7 @@ object EncAssemblyHandlers {
     private val publisher = cswCtx.eventService.defaultPublisher
 
     override def onMessage(msg: Event): Behavior[Event] = {
-      log.info(s"XXX received $msg")
+//      log.info(s"XXX received $msg")
       msg match {
         case e: SystemEvent =>
           if (e.eventKey == pkEnclosureDemandPosEventKey && e.contains(baseDemandKey)) {
@@ -70,7 +70,6 @@ object EncAssemblyHandlers {
                 val newEvent = SystemEvent(cswCtx.componentInfo.prefix, encTelPosEventName)
                   .add(baseKey.set(newBase))
                   .add(capKey.set(newCap))
-//                log.info(s"XXX publish $newEvent")
                 publisher.publish(newEvent)
                 new EventHandlerActor(ctx, cswCtx, Some(newBase), Some(newCap))
               case _ =>
