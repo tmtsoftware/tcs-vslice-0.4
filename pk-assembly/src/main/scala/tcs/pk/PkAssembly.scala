@@ -33,7 +33,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   // Key to get the position value from a command
   // (Note: Using CoordKey here instead of the individual RA,Dec params defined in the icd database for TCS)
-  private val posKey: Key[Coord] = KeyType.CoordKey.make("pos")
+  private val basePosKey: Key[Coord] = KeyType.CoordKey.make("base")
 
   // Keys for telescope offsets in arcsec
   private val xCoordinateKey: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
@@ -85,8 +85,8 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   private def validateSlewToTarget(runId: Id, setup: Setup): ValidateCommandResponse = {
-    if (!(setup.exists(posKey) && setup(posKey).size > 0))
-      Invalid(runId, MissingKeyIssue(s"required SlewToTarget command key: $posKey is missing."))
+    if (!(setup.exists(basePosKey) && setup(basePosKey).size > 0))
+      Invalid(runId, MissingKeyIssue(s"required SlewToTarget command key: $basePosKey is missing."))
     else
       Accepted(runId)
   }
@@ -113,7 +113,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
     else
       setup.commandName.name match {
         case "SlewToTarget" =>
-          val pos = setup(posKey).head
+          val pos = setup(basePosKey).head
           setOffset(0.0, 0.0, "ICRS")
           slewToTarget(runId, pos)
         case "SetOffset" =>

@@ -32,7 +32,7 @@ import scala.concurrent.duration._
 //noinspection DuplicatedCode
 // A client to test locating the pk assembly and sending it a command
 object TcsClient extends App {
-  val posKey: Key[Coord] = KeyType.CoordKey.make("pos")
+  val basePosKey: Key[Coord] = KeyType.CoordKey.make("base")
 
   // Keys for telescope offsets in arcsec
   private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
@@ -72,7 +72,7 @@ object TcsClient extends App {
               pmx = pm.pmx,
               pmy = pm.pmy
             )
-            val posParam = posKey.set(
+            val posParam = basePosKey.set(
               eqCoord
             )
             Some(Setup(prefix, commandName, obsId).add(posParam))

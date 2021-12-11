@@ -116,7 +116,7 @@ In the current version these events are published:
 * TCS.PointingKernelAssembly.M3DemandPosition
 * TCS.PointingKernelAssembly.EnclosureDemandPosition
 * TCS.PointingKernelAssembly.MountDemandPosition
-* TCS.MCSAssembly.TCS Telescope Position
+* TCS.MCSAssembly.MountPosition
 * TCS.ENCAssembly.CurrentPosition
 
 The event prefixes and names are based on the TCS API as defined in the above TCS-Model-Files repo.

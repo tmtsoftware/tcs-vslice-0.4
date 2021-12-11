@@ -29,14 +29,16 @@ import scala.concurrent.ExecutionContextExecutor
  */
 
 object McsAssemblyHandlers {
-  private val pkAssemblyPrefix         = Prefix(TCS, "PointingKernelAssembly")
-  private val pkMountDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
-  private val pkEventKeys              = Set(pkMountDemandPosEventKey)
+  private val pkAssemblyPrefix                = Prefix(TCS, "PointingKernelAssembly")
+  private val pkMountDemandPosEventKey        = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
+  private val pkDemandPosKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("pos")
+  private val pkEventKeys                     = Set(pkMountDemandPosEventKey)
 
   // Actor to receive Assembly events
   private object EventHandlerActor {
-    private val posKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("pos")
-    private val mcsTelPosEventName      = EventName("TCS Telescope Position")
+    private val currentPosKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("current")
+    private val demandPosKey: Key[AltAzCoord]  = KeyType.AltAzCoordKey.make("demand")
+    private val mcsTelPosEventName             = EventName("MountPosition")
 
     def make(cswCtx: CswContext): Behavior[Event] = {
       Behaviors.setup(ctx => new EventHandlerActor(ctx, cswCtx))
@@ -59,12 +61,12 @@ object McsAssemblyHandlers {
             // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
             count = (count + 1) % 100
             if (count == 0) {
-              val altAzCoordDemand = e(posKey).head
+              val altAzCoordDemand = e(pkDemandPosKey).head
               maybeCurrentPos match {
                 case Some(currentPos) =>
                   val newPos = getNextPos(altAzCoordDemand, currentPos)
                   val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
-                    .add(posKey.set(newPos))
+                    .madd(currentPosKey.set(newPos), demandPosKey.set(altAzCoordDemand))
                   publisher.publish(newEvent)
                   new EventHandlerActor(ctx, cswCtx, Some(newPos))
                 case None =>
