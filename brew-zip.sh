@@ -42,7 +42,8 @@ done
 
 cp tpk-jni/brew/Makefile $dir
 
-(cd install; zip -r tcs-vslice-dylibs.zip tcs-vslice)
+zipfile=tcs-vslice-dylibs.zip
+(cd install; rm -f $zipfile; zip -r $zipfile tcs-vslice; echo "NOTE: Update SHA in Homebrew formula"; shasum -a 256 $zipfile)
 
 # Remove install libs before testing brew install
 for i in $LOCAL_LIBS; do
