@@ -167,7 +167,7 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
         publishMcsDemand(mcsAzDeg, mcsElDeg);
         if (!(std::isnan(baseDeg) || std::isnan(capDeg)) && ++publishCounter % 5 == 0) {
             publishCounter = 0;
-            publishEcsDemand(rad2Deg(baseDeg), rad2Deg(capDeg));
+            publishEcsDemand(baseDeg, capDeg);
         }
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }

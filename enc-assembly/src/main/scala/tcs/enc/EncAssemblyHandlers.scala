@@ -29,17 +29,23 @@ import scala.concurrent.ExecutionContextExecutor
  */
 
 object EncAssemblyHandlers {
-  private val pkAssemblyPrefix             = Prefix(TCS, "PointingKernelAssembly")
+  private val pkAssemblyPrefix = Prefix(TCS, "PointingKernelAssembly")
+
+  // This assembly subscribes to the pk assembly's EnclosureDemandPosition event
   private val pkEnclosureDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("EnclosureDemandPosition"))
+  private val pkBaseDemandKey: Key[Double] = KeyType.DoubleKey.make("BasePosition")
+  private val pkCapDemandKey: Key[Double]  = KeyType.DoubleKey.make("CapPosition")
   private val pkEventKeys                  = Set(pkEnclosureDemandPosEventKey)
 
   // Actor to receive Assembly events
   private object EventHandlerActor {
-    private val baseDemandKey: Key[Double] = KeyType.DoubleKey.make("BasePosition")
-    private val capDemandKey: Key[Double]  = KeyType.DoubleKey.make("CapPosition")
-    private val baseKey: Key[Double]       = KeyType.DoubleKey.make("base")
-    private val capKey: Key[Double]        = KeyType.DoubleKey.make("cap")
-    private val encTelPosEventName         = EventName("CurrentPosition")
+
+    // This assembly fires the CurrentPosition event
+    private val encTelPosEventName          = EventName("CurrentPosition")
+    private val baseCurrentKey: Key[Double] = KeyType.DoubleKey.make("baseCurrent")
+    private val capCurrentKey: Key[Double]  = KeyType.DoubleKey.make("capCurrent")
+    private val baseDemandKey: Key[Double]  = KeyType.DoubleKey.make("baseDemand")
+    private val capDemandKey: Key[Double]   = KeyType.DoubleKey.make("capDemand")
 
     def make(cswCtx: CswContext): Behavior[Event] = {
       Behaviors.setup(ctx => new EventHandlerActor(ctx, cswCtx))
@@ -61,15 +67,14 @@ object EncAssemblyHandlers {
 //      log.info(s"XXX received $msg")
       msg match {
         case e: SystemEvent =>
-          if (e.eventKey == pkEnclosureDemandPosEventKey && e.contains(baseDemandKey)) {
-            val demandBase = e(baseDemandKey).head
-            val demandCap  = e(capDemandKey).head
+          if (e.eventKey == pkEnclosureDemandPosEventKey && e.contains(pkBaseDemandKey)) {
+            val demandBase = e(pkBaseDemandKey).head
+            val demandCap  = e(pkCapDemandKey).head
             (maybeCurrentBase, maybeCurrentCap) match {
               case (Some(currentBase), Some(currentCap)) =>
                 val (newBase, newCap) = getNextPos(demandBase, demandCap, currentBase, currentCap)
                 val newEvent = SystemEvent(cswCtx.componentInfo.prefix, encTelPosEventName)
-                  .add(baseKey.set(newBase))
-                  .add(capKey.set(newCap))
+                  .madd(baseDemandKey.set(demandBase), capDemandKey.set(demandCap), baseCurrentKey.set(newBase), capCurrentKey.set(newCap))
                 publisher.publish(newEvent)
                 new EventHandlerActor(ctx, cswCtx, Some(newBase), Some(newCap))
               case _ =>
