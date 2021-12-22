@@ -25,11 +25,19 @@ The assemblies provided here assumes the use of the altAzCoord type and posts ev
 
 ## Dependencies
 
+Note: For Ubuntu, install these packages:
+
+```
+sudo apt install build-essential
+sudo apt-get install -y openjdk-11-jdk
+```
+
 Currently this project requires that a number of shared libraries are installed in a known location (default: /usr/local/lib),
 which must also be included the LD_LIBRARY_PATH environment variable (On Linux).
 
 Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
-First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid). You can also use `make PREFIX=/my/dir` to change the installation directory.
+First follow the instructions in the [csw-c README](https://github.com/tmtsoftware/csw-c) to install the required C libraries (libhiredis, libcbor, libuuid).
+You can also use `make PREFIX=/my/dir` to change the installation directory.
 
 * TPK (branch: add-cmake-files)]
 
