@@ -89,6 +89,10 @@ Usage: tcs-client [options]
   -y, --y <y>              The y offset in arcsec: (default: 0.0)
   -o, --obsId <id>         The observation id: (default: None)
   -s, --subscribe <value>  Subscribe to all events published here
+  -r, --rate <milliseconds>
+                           Limit the receiving rate for subscribed events (in ms): Default: no limit
+  -e, --events prefix.name,...
+                           List of events (prefix.name) to subscribe to (default: TCS.MCSAssembly.MountPosition, TCS.PointingKernelAssembly.EnclosureDemandPosition, TCS.PointingKernelAssembly.MountDemandPosition, TCS.PointingKernelAssembly.M3DemandPosition, TCS.ENCAssembly.CurrentPosition)
   --help
   --version
 ```

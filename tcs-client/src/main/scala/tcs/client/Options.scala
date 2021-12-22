@@ -14,11 +14,21 @@ case class Options(
     x: Double = 0.0,
     y: Double = 0.0,
     obsId: Option[ObsId] = None,
-    subscribeToEvents: Boolean = false
+    subscribeToEvents: Boolean = false,
+    events: Seq[String] = Nil,
+    rateLimiter: Option[Int] = None
 )
 
 object Options {
   private val defaults = Options()
+
+  val defaultEventKeys = Set(
+    "TCS.PointingKernelAssembly.MountDemandPosition",
+    "TCS.PointingKernelAssembly.M3DemandPosition",
+    "TCS.PointingKernelAssembly.EnclosureDemandPosition",
+    "TCS.ENCAssembly.CurrentPosition",
+    "TCS.MCSAssembly.MountPosition"
+  )
 
   // Parser for the command line options
   private val parser = new scopt.OptionParser[Options]("tcs-client") {
@@ -60,10 +70,17 @@ object Options {
       c.copy(obsId = Some(ObsId(x)))
     } text s"The observation id: (default: ${defaults.obsId})"
 
-    // TODO: make value a wildcard for psubscribe
-    opt[Boolean]('s', "subscribe") action { (x, c) =>
+    opt[Boolean]('s', "subscribe") action { (_, c) =>
       c.copy(subscribeToEvents = true)
-    } text s"Subscribe to all events published here"
+    } text "Subscribe to all events published here"
+
+    opt[Int]('r', "rate") valueName "<milliseconds>" action { (x, c) =>
+      c.copy(rateLimiter = Some(x))
+    } text "Limit the receiving rate for subscribed events (in ms): Default: no limit"
+
+    opt[Seq[String]]('e', "events") valueName "prefix.name,..." action { (x, c) =>
+      c.copy(events = x)
+    } text s"List of events (prefix.name) to subscribe to (default: ${defaultEventKeys.mkString(", ")})"
 
     help("help")
     version("version")

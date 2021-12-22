@@ -21,7 +21,7 @@ import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.params.core.models.Coords.{Coord, EqCoord, EqFrame}
 import csw.params.core.models.ProperMotion
-import csw.params.events.{Event, EventKey, EventName, SystemEvent}
+import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
@@ -114,16 +114,15 @@ object TcsClient extends App {
       val subscriber                      = eventService.defaultSubscriber
       val eventHandler                    = typedSystem.spawn(EventHandler.make(), "EventHandler")
       // TODO: Use wildcard option for events?
-      val eventKeys = Set(
-        EventKey(pkAssemblyPrefix, EventName("MountDemandPosition")),
-        EventKey(pkAssemblyPrefix, EventName("M3DemandPosition")),
-        EventKey(pkAssemblyPrefix, EventName("EnclosureDemandPosition")),
-        EventKey(encAssemblyPrefix, EventName("CurrentPosition")),
-        EventKey(mcsAssemblyPrefix, EventName("MountPosition"))
-      )
-      // TODO: Pass rate as option
-//      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.second, RateLimiterMode)
-      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.millisecond, RateLimiterMode)
+      val eventKeys =
+        if (options.events.nonEmpty)
+          options.events.map(EventKey.apply).toSet
+        else Options.defaultEventKeys.map(EventKey.apply)
+
+      if (options.rateLimiter.nonEmpty)
+        subscriber.subscribeActorRef(eventKeys, eventHandler, options.rateLimiter.get.millisecond, RateLimiterMode)
+      else
+        subscriber.subscribeActorRef(eventKeys, eventHandler)
     }
 
     Await.result(locationService.resolve(connection, timeout.duration), timeout.duration) match {
