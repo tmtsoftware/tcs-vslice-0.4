@@ -41,8 +41,10 @@ object TcsClient extends App {
   implicit val timeout: Timeout = Timeout(10.seconds)
   val prefix                    = Prefix("TCS.pk_client")
   // TODO: Pass the assembly name as an option?
-  val pkAssemblyPrefix = Prefix(TCS, "PointingKernelAssembly")
-  val connection       = AkkaConnection(ComponentId(pkAssemblyPrefix, Assembly))
+  val pkAssemblyPrefix  = Prefix(TCS, "PointingKernelAssembly")
+  val encAssemblyPrefix = Prefix(TCS, "ENCAssembly")
+  val mcsAssemblyPrefix = Prefix(TCS, "MCSAssembly")
+  val connection        = AkkaConnection(ComponentId(pkAssemblyPrefix, Assembly))
 
   Options.parse(args, run)
 
@@ -115,10 +117,13 @@ object TcsClient extends App {
       val eventKeys = Set(
         EventKey(pkAssemblyPrefix, EventName("MountDemandPosition")),
         EventKey(pkAssemblyPrefix, EventName("M3DemandPosition")),
-        EventKey(pkAssemblyPrefix, EventName("EnclosureDemandPosition"))
+        EventKey(pkAssemblyPrefix, EventName("EnclosureDemandPosition")),
+        EventKey(encAssemblyPrefix, EventName("CurrentPosition")),
+        EventKey(mcsAssemblyPrefix, EventName("MountPosition"))
       )
       // TODO: Pass rate as option
-      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.second, RateLimiterMode)
+//      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.second, RateLimiterMode)
+      subscriber.subscribeActorRef(eventKeys, eventHandler, 1.millisecond, RateLimiterMode)
     }
 
     Await.result(locationService.resolve(connection, timeout.duration), timeout.duration) match {
