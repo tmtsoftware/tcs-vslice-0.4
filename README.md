@@ -73,12 +73,17 @@ the brew install on Macs).
 
 ## Running the pk assembly
 
+Note that by setting the environment variable TPK_USE_FAKE_SYSTEM_CLOCK
+you can force the internal clock used by the assembly's C code to start at MDJ = midnight, making tests
+more reproducible.
+
 To run the assemblies, run: 
     
     csw-services start  # Note: Make sure you are using the version for csw-4.0.0-M1 or greater
 
     sbt stage
 
+    export TPK_USE_FAKE_SYSTEM_CLOCK=1
     ./target/universal/stage/bin/tcs-deploy --local ./tcs-deploy/src/main/resources/McsEncPkContainer.conf
 
 To send a command to the pk assembly, you can use the tcs-client command line application:

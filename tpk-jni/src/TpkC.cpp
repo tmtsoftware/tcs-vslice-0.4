@@ -3,11 +3,8 @@
 #include <ctime>
 #include <cmath>
 
-#ifdef USE_FAKE_SYSTEM_CLOCK
 #include "FakeSystemClock.h"
-#else
 #include "tpk/UnixClock.h"
-#endif
 
 #include "csw/csw.h"
 
@@ -289,34 +286,36 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
     cswFreeEvent(event);
 }
 
-// XXX TODO: Move this to constructor?
 void TpkC::init() {
     // Construct the TCS. First we need a clock...
     // Assume that the system clock is set to UTC. TAI-UTC is 37 sec at the time of writing.
+    tpk::UnixClock unix_clock(37.0);
 
-    // (XXX Allan: Set USE_FAKE_SYSTEM_CLOCK in CMakeFiles.txt to ignore the time of day, making testing more reproducible.)
-#ifdef USE_FAKE_SYSTEM_CLOCK
-    FakeSystemClock clock(37.0);
-#else
-    tpk::UnixClock clock(37.0);
-#endif
+    // XXX Allan: For testing, you can set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK, which forces the MJD to midnight,
+    // making tests more reproducible.
+    FakeSystemClock fake_clock(37.0);
+    tpk::Clock* clock;
+    if (getenv("TPK_USE_FAKE_SYSTEM_CLOCK"))
+        clock = &fake_clock;
+    else
+        clock = &unix_clock;
 
     // and a Site...
-    site = new tpk::Site(clock.read(),
-                         0.56,            // UT1-UTC (seconds)
-                         37.0,            // TAI-UTC (seconds)
+    site = new tpk::Site(clock->read(),
+                         0.56,             // UT1-UTC (seconds)
+                         37.0,             // TAI-UTC (seconds)
                          32.184,          // TT-TAI (seconds)
-                         -155.4775033,    // East longitude (for Hawaii)
-                         19.82900194,     // Latitude (for Hawaii)
-                         4160,            // Height (metres) (for Hawaii)
-                         0.1611, 0.4475   // Polar motions (arcsec)
+                         -155.4775033,   // East longitude (for Hawaii)
+                         19.82900194,      // Latitude (for Hawaii)
+                         4160,              // Height (metres) (for Hawaii)
+                         0.1611, 0.4475  // Polar motions (arcsec)
     );
 
     // Get an object for publishing CSW events
     publisher = cswEventPublisherInit();
 
     // and a "time keeper"...
-    time = new tpk::TimeKeeper(clock, *site);
+    time = new tpk::TimeKeeper(*clock, *site);
 
     // Create a transformation that converts mm to radians for a 450000.0mm	 focal length.
     tpk::AffineTransform transf(0.0, 0.0, 1.0 / 450000.0, 0.0);

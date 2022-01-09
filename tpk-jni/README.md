@@ -16,3 +16,9 @@ Targets:
 * make install - installs the libs and .h files (in /usr/local by default)
 * make test - run tests
 
+## Running
+
+This library is loaded automatically at runtime by Scala code.
+Note that by setting the environment variable TPK_USE_FAKE_SYSTEM_CLOCK
+you can force the internal clock to start at MDJ = midnight, making tests
+more reproducible.
