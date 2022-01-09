@@ -73,9 +73,10 @@ the brew install on Macs).
 
 ## Running the pk assembly
 
-Note that by setting the environment variable TPK_USE_FAKE_SYSTEM_CLOCK
+*Note that by setting the environment variable TPK_USE_FAKE_SYSTEM_CLOCK
 you can force the internal clock used by the assembly's C code to start at MDJ = midnight, making tests
-more reproducible.
+more reproducible. In this case coordinates with RA near zero should be above the horizon,
+and thus produce position events.*
 
 To run the assemblies, run: 
     
@@ -112,8 +113,8 @@ Usage: tcs-client [options]
 
 Example:
 ```
-./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 10:11:12 --dec 15:21:22
-./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 12:11:12 --dec 13:21:22
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 00:11:12 --dec 15:21:22
+./target/universal/stage/bin/tcs-client -c SlewToTarget --ra 00:10:01 --dec 13:21:22
 ```
 
 To see the events being fired from the C/C++ code, you can run the tcs-client with the `--subscribe true` option, 

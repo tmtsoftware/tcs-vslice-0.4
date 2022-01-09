@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.5] - 
+
+### Changed
+
+* Added check for environment variable TPK_USE_FAKE_SYSTEM_CLOCK in dynamically loaded shared libtpk-jni.
+  (If set, the MJD is forced to start at midnight, making it easier to make reproducible test cases.)
+
 ## [tcs-vslice v0.4] - 2021-12-13
 
 ### Changed
