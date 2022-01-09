@@ -2,7 +2,13 @@
 
 #include <ctime>
 #include <cmath>
+
+#ifdef USE_FAKE_SYSTEM_CLOCK
+#include "FakeSystemClock.h"
+#else
 #include "tpk/UnixClock.h"
+#endif
+
 #include "csw/csw.h"
 
 // Convert degrees to microarcseconds
@@ -286,8 +292,14 @@ void TpkC::publishM3Demand(double rotation, double tilt) {
 // XXX TODO: Move this to constructor?
 void TpkC::init() {
     // Construct the TCS. First we need a clock...
-    // Assume that the system clock is st to UTC. TAI-UTC is 37 sec at the time of writing.
+    // Assume that the system clock is set to UTC. TAI-UTC is 37 sec at the time of writing.
+
+    // (XXX Allan: Set USE_FAKE_SYSTEM_CLOCK in CMakeFiles.txt to ignore the time of day, making testing more reproducible.)
+#ifdef USE_FAKE_SYSTEM_CLOCK
+    FakeSystemClock clock(37.0);
+#else
     tpk::UnixClock clock(37.0);
+#endif
 
     // and a Site...
     site = new tpk::Site(clock.read(),

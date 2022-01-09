@@ -7,12 +7,16 @@ find_package(Threads REQUIRED)
 
 set(INCLUDE_DIR /usr/local/include)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_FAKE_SYSTEM_CLOCK=1")
+
 include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
 link_directories("/usr/local/lib")
 
 add_library(${PROJECT_NAME} SHARED
+        FakeSystemClock.cpp
+        FakeSystemClock.h
         TpkC.cpp
         TpkC.h
         ScanTask.cpp
