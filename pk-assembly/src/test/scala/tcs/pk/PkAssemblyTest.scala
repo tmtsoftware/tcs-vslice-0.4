@@ -52,8 +52,8 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
     )
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
-    val resp = Await.result(assembly.submitAndWait(setup), timeout.duration)
-    resp shouldBe(Invalid(resp.runId, ParameterValueOutOfRangeIssue(s"RA value out of range: 120.0 hours")))
+    val resp     = Await.result(assembly.submitAndWait(setup), timeout.duration)
+    resp shouldBe (Invalid(resp.runId, ParameterValueOutOfRangeIssue(s"RA value out of range: 120.0 hours")))
   }
 
   test("Assembly should validate Dec coordinate in Setup") {
@@ -69,7 +69,7 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
     )
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
-    val resp = Await.result(assembly.submitAndWait(setup), timeout.duration)
-    resp shouldBe(Invalid(resp.runId, ParameterValueOutOfRangeIssue(s"Dec value out of range: 200.0 deg")))
+    val resp     = Await.result(assembly.submitAndWait(setup), timeout.duration)
+    resp shouldBe (Invalid(resp.runId, ParameterValueOutOfRangeIssue(s"Dec value out of range: 200.0 deg")))
   }
 }
