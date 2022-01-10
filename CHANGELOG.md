@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [tcs-vslice v0.5] - 
+## [tcs-vslice v0.5] - 2022-01-10
 
 ### Changed
 
