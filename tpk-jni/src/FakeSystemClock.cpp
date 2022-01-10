@@ -31,18 +31,21 @@ FakeSystemClock::FakeSystemClock(const double &offset) {
     // Convert the time to a calendar data
     std::tm *tm = std::gmtime(&t);
 
-    // Convert this date to a MJD
-    int j;
-    slaCldj(1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday, &mMjdZero, &j);
-    assert(j == 0);
-
     // XXX Allan: Commenting out this part during testing to make results predictable
+//    // Convert this date to a MJD
+//    int j;
+//    slaCldj(1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday, &mMjdZero, &j);
+//    assert(j == 0);
+//
 //    // Add the time of day
 //        mMjdZero += ( tm->tm_hour + ( tm->tm_min + tm->tm_sec / 60.0 ) /
 //                60.0 ) / 24.0;
+//
+//    // Add the offset between the system clock and TAI.
+//    mMjdZero += offset / 86400.0;
 
-    // Add the offset between the system clock and TAI.
-    mMjdZero += offset / 86400.0;
+    // XXX Allan: Set to midnight, Jan 1, 2022
+    mMjdZero = 59580;
 }
 
 /*****************************************************************************/

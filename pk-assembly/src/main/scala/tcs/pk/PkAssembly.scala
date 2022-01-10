@@ -5,7 +5,13 @@ import csw.command.client.messages.TopLevelActorMessage
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
 import csw.location.api.models.TrackingEvent
-import csw.params.commands.CommandIssue.{MissingKeyIssue, UnsupportedCommandIssue, WrongInternalStateIssue}
+import csw.params.commands.CommandIssue.{
+  MissingKeyIssue,
+  ParameterValueOutOfRangeIssue,
+  UnsupportedCommandIssue,
+  WrongInternalStateIssue,
+  WrongParameterTypeIssue
+}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.{AltAzCoord, Coord, EqCoord}
 import csw.params.core.models.{Angle, Choice, Id}
@@ -85,10 +91,33 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
   }
 
   private def validateSlewToTarget(runId: Id, setup: Setup): ValidateCommandResponse = {
-    if (!(setup.exists(basePosKey) && setup(basePosKey).size > 0))
+    if (!(setup.exists(basePosKey) && setup(basePosKey).size > 0)) {
       Invalid(runId, MissingKeyIssue(s"required SlewToTarget command key: $basePosKey is missing."))
-    else
-      Accepted(runId)
+    }
+    else {
+      val targetPos = setup(basePosKey).head
+      targetPos match {
+        case EqCoord(_, ra, dec, frame, _, _) =>
+          if (ra.toDegree < 0.0 || ra.toDegree >= 360.0)
+            Invalid(runId, ParameterValueOutOfRangeIssue(s"RA value out of range: ${ra.toDegree * Angle.D2H} hours"))
+          else if (dec.toDegree < 90.0 || dec.toDegree > 90.0)
+            Invalid(runId, ParameterValueOutOfRangeIssue(s"Dec value out of range: ${dec.toDegree} deg"))
+          else
+            Accepted(runId)
+        case AltAzCoord(_, alt, az) =>
+          if (az.toDegree < 0.0 || az.toDegree >= 360.0)
+            Invalid(runId, ParameterValueOutOfRangeIssue(s"Az value out of range: ${az.toDegree} deg"))
+          else if (alt.toDegree < 90.0 || alt.toDegree > 90.0)
+            Invalid(runId, ParameterValueOutOfRangeIssue(s"Alt value out of range: ${alt.toDegree} deg"))
+          else
+            Accepted(runId)
+        case x =>
+          Invalid(
+            runId,
+            WrongParameterTypeIssue(s"Expected base position to be of type EqCoord or AltAzCoord, but got: ${x.getClass.getName}")
+          )
+      }
+    }
   }
 
   private def validateOffset(runId: Id, setup: Setup): ValidateCommandResponse = {
@@ -156,7 +185,7 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       case "ICRS" => tpkc.setICRSOffset(x, y)
       case "FK5"  => tpkc.setFK5Offset(x, y)
       case "AzEl" => tpkc.setAzElOffset(x, y)
-      case x      => log.error(s"Unsupported reference frame for SetOffset: $refFrame")
+      case x      => log.error(s"Unsupported reference frame for SetOffset: $x")
     }
   }
 

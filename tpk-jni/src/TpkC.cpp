@@ -291,7 +291,7 @@ void TpkC::init() {
     // Assume that the system clock is set to UTC. TAI-UTC is 37 sec at the time of writing.
     tpk::UnixClock unix_clock(37.0);
 
-    // XXX Allan: For testing, you can set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK, which forces the MJD to midnight,
+    // XXX Allan: For testing, you can set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK, which forces the MJD to midnight, Jan 1, 2022,
     // making tests more reproducible.
     FakeSystemClock fake_clock(37.0);
     tpk::Clock* clock;
