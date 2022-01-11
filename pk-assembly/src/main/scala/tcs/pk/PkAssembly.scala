@@ -100,14 +100,14 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
         case EqCoord(_, ra, dec, frame, _, _) =>
           if (ra.toDegree < 0.0 || ra.toDegree >= 360.0)
             Invalid(runId, ParameterValueOutOfRangeIssue(s"RA value out of range: ${ra.toDegree * Angle.D2H} hours"))
-          else if (dec.toDegree < 90.0 || dec.toDegree > 90.0)
+          else if (dec.toDegree < -90.0 || dec.toDegree > 90.0)
             Invalid(runId, ParameterValueOutOfRangeIssue(s"Dec value out of range: ${dec.toDegree} deg"))
           else
             Accepted(runId)
         case AltAzCoord(_, alt, az) =>
           if (az.toDegree < 0.0 || az.toDegree >= 360.0)
             Invalid(runId, ParameterValueOutOfRangeIssue(s"Az value out of range: ${az.toDegree} deg"))
-          else if (alt.toDegree < 90.0 || alt.toDegree > 90.0)
+          else if (alt.toDegree < -90.0 || alt.toDegree > 90.0)
             Invalid(runId, ParameterValueOutOfRangeIssue(s"Alt value out of range: ${alt.toDegree} deg"))
           else
             Accepted(runId)
