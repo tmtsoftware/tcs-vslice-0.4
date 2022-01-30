@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.6] - 2022-01-31
+
+### Changed
+
+* Added "currentPos" and "demandPos" fields (both EqCoord types) to MCSAssembly's MountPosition event, so that you can see the RA,Dec values
+* Added "siderealTime" field (double, hours) to the TCS PointingKernelAssembly's "MountDemandPosition" field, so that the alt,az values can be converted to RA,Dec (For latitude, Hawaii is currently hard-coded)
+* Fixed a bug in the event fired from the pk assembly (az and el were swapped)
+* Updated the TCS-Model-Files repo (branch: tcs-vslice-04-test) with the latest event changes.
+
 ## [tcs-vslice v0.5] - 2022-01-10
 
 ### Changed
