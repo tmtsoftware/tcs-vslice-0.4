@@ -68,7 +68,6 @@ object McsAssemblyHandlers {
       val s2  = if (sin(az) > 0) 360 - s.toDegree else s.toDegree
       val ra1 = st - s2 / 15
       val ra  = (if (ra1 < 0) ra1 + 24 else ra1).arcHour
-      println(s"\nXXX------------------XXX\nst=$st h\naltAz=$pos\nraDec=${EqCoord(ra, dec, tag = pos.tag)}\n")
       EqCoord(ra, dec, tag = pos.tag)
     }
   }
