@@ -1,9 +1,15 @@
 package tcs.pk.wrapper
 
-import jnr.ffi.{LibraryLoader, Pointer}
+import jnr.ffi._
 import TpkC._
 
 object TpkC {
+
+  // Matches C++ version in tpk-jni used to return coordinate positions
+  class CoordPair(runtime: Runtime) extends Struct(runtime) {
+    var a = new Double
+    var b = new Double
+  }
 
   /**
    * Matching interface for the extern "C" API defined in TpkC.cpp in the tpk-jni subproject
@@ -17,16 +23,17 @@ object TpkC {
 
     def tpkc_newICRSTarget(self: Pointer, ra: Double, dec: Double): Unit
     def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Unit
-    def tpkc_newAzElTarget(self: Pointer, ra: Double, dec: Double): Unit
+    def tpkc_newAzElTarget(self: Pointer, az: Double, el: Double): Unit
 
     def tpkc_setICRSOffset(self: Pointer, raO: Double, decO: Double): Unit
     def tpkc_setFK5Offset(self: Pointer, raO: Double, decO: Double): Unit
     def tpkc_setAzElOffset(self: Pointer, azO: Double, elO: Double): Unit
 
-    // XXX JNR does not currently support returning struct by value!
-    // Return the current position in the current ref sys (RA, Dec for ICRS, FK5, ...)
-    def tpkc_currentPositionA(self: Pointer): Double
-    def tpkc_currentPositionB(self: Pointer): Double
+//    // Return the current position in the current ref sys (RA, Dec for ICRS, FK5, ...)
+//    def tpkc_currentPosition(self: Pointer, @Out @Transient raDec: CoordPair): Unit
+//
+//    // Convert az,el to ra,dec
+//    def tpkc_azElToRaDec(self: Pointer, az: Double, el: Double, @Out @Transient raDec: CoordPair): Unit
   }
 
   /**
@@ -35,11 +42,12 @@ object TpkC {
   def getInstance(): TpkC = {
     val tpkExternC = LibraryLoader.create(classOf[TpkExternC]).load("tpk-jni")
     val self       = tpkExternC.tpkc_ctor()
-    new TpkC(tpkExternC, self)
+    val runtime    = Runtime.getRuntime(tpkExternC)
+    new TpkC(tpkExternC, self, runtime)
   }
 }
 
-class TpkC(val tpkExternC: TpkExternC, val self: Pointer) {
+class TpkC(val tpkExternC: TpkExternC, val self: Pointer, runtime: Runtime) {
   def init(): Unit = {
     tpkExternC.tpkc_init(self)
   }
@@ -68,13 +76,18 @@ class TpkC(val tpkExternC: TpkExternC, val self: Pointer) {
     tpkExternC.tpkc_setAzElOffset(self, azO, elO)
   }
 
-  // The mount's current RA position  (if using ICRS, FK5)
-  def currentPositionA(): Double = {
-    tpkExternC.tpkc_currentPositionA(self)
-  }
+//  // The mount's current ra,dec position  (if using ICRS, FK5) as a pair (ra, dec) in deg
+//  def currentPosition(): (Double, Double) = {
+//    val raDec = new CoordPair(runtime)
+//    tpkExternC.tpkc_currentPosition(self, raDec)
+//    (raDec.a.get(), raDec.b.get())
+//  }
+//
+//  // Converts the given az,el coords (in deg) to ra,dec and returns a pair (ra, dec) in deg
+//  def azElToRaDec(az: Double, el: Double): (Double, Double) = {
+//    val raDec = new CoordPair(runtime)
+//    tpkExternC.tpkc_azElToRaDec(self, az, el, raDec)
+//    (raDec.a.get(), raDec.b.get())
+//  }
 
-  // The mount's current Dec position (if using ICRS, FK5)
-  def currentPositionB(): Double = {
-    tpkExternC.tpkc_currentPositionB(self)
-  }
 }

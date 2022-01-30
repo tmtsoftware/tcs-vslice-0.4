@@ -17,6 +17,9 @@ static double deg2Mas(double d) { return d * 60.0 * 60.0 * 1000.0 * 1000.0; }
 // Convert radians to degrees
 #define rad2Deg(d) ((d) * 180.0 / M_PI)
 
+// Convert radians to degrees
+#define rad2Hour(d) (rad2Deg(d) / 15.0)
+
 // CSW component prefix
 const char *prefix = "TCS.PointingKernelAssembly";
 
@@ -186,7 +189,7 @@ void TpkC::publishMcsDemand(double az, double el) {
 
     // pos
     CswAltAzCoord values[1];
-    values[0] = cswMakeAltAzCoord("BASE", lround(deg2Mas(az)), lround(deg2Mas(el)));
+    values[0] = cswMakeAltAzCoord("BASE", lround(deg2Mas(el)), lround(deg2Mas(az)));
     CswArrayValue arrayValues = {.values = values, .numValues = 1};
     CswParameter coordParam = cswMakeParameter("pos", AltAzCoordKey, arrayValues, csw_unit_NoUnits);
 
@@ -195,10 +198,15 @@ void TpkC::publishMcsDemand(double az, double el) {
     CswArrayValue timeValues = {.values = timeAr, .numValues = 1};
     CswParameter timeParam = cswMakeParameter("time", UTCTimeKey, timeValues, csw_unit_NoUnits);
 
+    // sidereal time in hours
+    double st = rad2Hour(site->st(time->tai()));
+    double siderealTimeAr[] = {st};
+    CswArrayValue siderealTimeValues = {.values = siderealTimeAr, .numValues = 1};
+    CswParameter siderealTimeParam = cswMakeParameter("siderealTime", DoubleKey, siderealTimeValues, csw_unit_hour);
 
     // -- ParamSet
-    CswParameter params[] = {trackIdParam, coordParam, timeParam};
-    CswParamSet paramSet = {.params = params, .numParams = 3};
+    CswParameter params[] = {trackIdParam, coordParam, timeParam, siderealTimeParam};
+    CswParamSet paramSet = {.params = params, .numParams = 4};
 
     // -- Event --
     CswEvent event = cswMakeEvent(SystemEvent, prefix, "MountDemandPosition", paramSet);
@@ -294,7 +302,7 @@ void TpkC::init() {
     // XXX Allan: For testing, you can set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK, which forces the MJD to midnight, Jan 1, 2022,
     // making tests more reproducible.
     FakeSystemClock fake_clock(37.0);
-    tpk::Clock* clock;
+    tpk::Clock *clock;
     if (getenv("TPK_USE_FAKE_SYSTEM_CLOCK"))
         clock = &fake_clock;
     else
@@ -412,13 +420,19 @@ void TpkC::setAzElOffset(double azO, double elO) {
     enclosure->setOffset(a, b, refSys);
 }
 
-CurrentPosition TpkC::currentPosition() {
-    tpk::spherical telpos = mount->position();
-    CurrentPosition raDec;
-    raDec.a = rad2Deg(telpos.a);
-    raDec.b = rad2Deg(telpos.b);
-    return raDec;
-}
+//void TpkC::currentPosition(CoordPair *raDec) {
+//    tpk::spherical telpos = mount->position();
+//    raDec->a = rad2Deg(telpos.a);
+//    raDec->b = rad2Deg(telpos.b);
+//}
+//
+//// Convert the given az,el coordinates (in deg) to ra,dec
+//void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
+//    auto refSys = tpk::FK5RefSys();
+//    auto pos = refSys.fromAzEl(time->tai(), *site, tpk::spherical(az, el));
+//    raDec->a = rad2Deg(pos.a);
+//    raDec->b = rad2Deg(pos.b);
+//}
 
 // --- This provides access from C, to make it easier to access from Java ---
 
@@ -444,8 +458,8 @@ void tpkc_newFK5Target(TpkC *self, double ra, double dec) {
     self->newFK5Target(ra, dec);
 }
 
-void tpkc_newAzElTarget(TpkC *self, double ra, double dec) {
-    self->newAzElTarget(ra, dec);
+void tpkc_newAzElTarget(TpkC *self, double az, double el) {
+    self->newAzElTarget(az, el);
 }
 
 void tpkc_setICRSOffset(TpkC *self, double raO, double decO) {
@@ -460,16 +474,13 @@ void tpkc_setAzElOffset(TpkC *self, double raO, double decO) {
     self->setAzElOffset(raO, decO);
 }
 
-// XXX JNR does not currently support returning struct by value!
-// Returns the first coordinate of the current pos in the current ref sys (RA of ICRS, FK5, ...)
-double tpkc_currentPositionA(TpkC *self) {
-    return self->currentPosition().a;
-}
-
-// Returns the second coordinate of the current pos in the current ref sys (Dec of ICRS, FK5, ...)
-double tpkc_currentPositionB(TpkC *self) {
-    return self->currentPosition().b;
-}
+//void tpkc_currentPosition(TpkC *self, CoordPair *raDec) {
+//    self->currentPosition(raDec);
+//}
+//
+//void tpkc_azElToRaDec(TpkC *self, double az, double el, CoordPair *raDec) {
+//    self->azElToRaDec(az, el, raDec);
+//}
 
 }
 

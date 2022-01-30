@@ -6,10 +6,10 @@
 #include "ScanTask.h"
 #include "csw/csw.h"
 
-// The current position in the current ref sys
+// Used to store coordinates (az,el or ra,dec) in deg
 typedef struct {
     double a, b;
-} CurrentPosition;
+} CoordPair;
 
 
 // Used to access a limited set of TPK functions from Scala/Java
@@ -40,8 +40,11 @@ public:
 
     void setAzElOffset(double azO, double elO);
 
-    // Gets the current CurrentPosition position from the mount
-    CurrentPosition currentPosition();
+//    // Gets the current CurrentPosition position from the mount
+//    void currentPosition(CoordPair* raDec);
+//
+//    // Convert the given az,el coordinates (in deg) to ra,dec
+//    void azElToRaDec(double az, double el, CoordPair* raDec);
 
     // Calculates base and cap from the az and el coordinates (in deg)
     static void calculateBaseAndCap(double azDeg, double elDeg, double &baseDeg, double &capDeg);

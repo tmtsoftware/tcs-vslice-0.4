@@ -9,8 +9,8 @@ import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandResponse._
 import csw.params.commands.ControlCommand
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Coords.AltAzCoord
-import csw.params.core.models.Id
+import csw.params.core.models.Coords.{AltAzCoord, EqCoord}
+import csw.params.core.models.{Angle, Id}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
@@ -29,19 +29,47 @@ import scala.concurrent.ExecutionContextExecutor
  */
 
 object McsAssemblyHandlers {
-  private val pkAssemblyPrefix                = Prefix(TCS, "PointingKernelAssembly")
-  private val pkMountDemandPosEventKey        = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
-  private val pkDemandPosKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("pos")
-  private val pkEventKeys                     = Set(pkMountDemandPosEventKey)
+  private val pkAssemblyPrefix         = Prefix(TCS, "PointingKernelAssembly")
+  private val pkMountDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
+  private val pkDemandPosKey           = KeyType.AltAzCoordKey.make("pos")
+  private val pkSiderealTimeKey        = KeyType.DoubleKey.make("siderealTime")
+  private val pkEventKeys              = Set(pkMountDemandPosEventKey)
 
   // Actor to receive Assembly events
   private object EventHandlerActor {
-    private val currentPosKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("current")
-    private val demandPosKey: Key[AltAzCoord]  = KeyType.AltAzCoordKey.make("demand")
-    private val mcsTelPosEventName             = EventName("MountPosition")
+    private val currentPosKey: Key[AltAzCoord]   = KeyType.AltAzCoordKey.make("current")
+    private val demandPosKey: Key[AltAzCoord]    = KeyType.AltAzCoordKey.make("demand")
+    private val currentPosRaDecKey: Key[EqCoord] = KeyType.EqCoordKey.make("currentPos")
+    private val demandPosRaDecKey: Key[EqCoord]  = KeyType.EqCoordKey.make("demandPos")
+    private val mcsTelPosEventName               = EventName("MountPosition")
 
     def make(cswCtx: CswContext): Behavior[Event] = {
       Behaviors.setup(ctx => new EventHandlerActor(ctx, cswCtx))
+    }
+
+    /**
+     *  Convert az,el to ra,dec using the given sidereal time and site latitude.
+     * Algorithm based on http://www.stargazing.net/mas/al_az.htm.
+     * Note: The native TPK C++ code can do this, but this assembly does not use it (The pk assembly does).
+     *
+     * @param st sidereal time in hours
+     * @param pos the alt/az coordinates
+     * @param lat site's latitude in deg (default: for Hawaii)
+     * @return the ra.dec coords
+     */
+    private def altAzToRaDec(st: Double, pos: AltAzCoord, latDeg: Double = 19.82900194): EqCoord = {
+      import Math._
+      import Angle._
+      val lat = latDeg.degree.toRadian
+      val alt = pos.alt.toRadian
+      val az  = pos.az.toRadian
+      val dec = asin(sin(alt) * sin(lat) + cos(alt) * cos(lat) * cos(az)).radian
+      val s   = acos((sin(alt) - sin(lat) * sin(dec.toRadian)) / (cos(lat) * cos(dec.toRadian))).radian
+      val s2  = if (sin(az) > 0) 360 - s.toDegree else s.toDegree
+      val ra1 = st - s2 / 15
+      val ra  = (if (ra1 < 0) ra1 + 24 else ra1).arcHour
+      println(s"\nXXX------------------XXX\nst=$st h\naltAz=$pos\nraDec=${EqCoord(ra, dec, tag = pos.tag)}\n")
+      EqCoord(ra, dec, tag = pos.tag)
     }
   }
 
@@ -64,11 +92,20 @@ object McsAssemblyHandlers {
               val altAzCoordDemand = e(pkDemandPosKey).head
               maybeCurrentPos match {
                 case Some(currentPos) =>
-                  val newPos = getNextPos(altAzCoordDemand, currentPos)
+                  val siderealTimeHours = e(pkSiderealTimeKey).head
+                  val newAltAzPos       = getNextPos(altAzCoordDemand, currentPos)
+                  // Add RA, Dec values for the demand and current positions
+                  val currentPosRaDec = altAzToRaDec(siderealTimeHours, newAltAzPos)
+                  val demandPosRaDec  = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
                   val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
-                    .madd(currentPosKey.set(newPos), demandPosKey.set(altAzCoordDemand))
+                    .madd(
+                      currentPosKey.set(newAltAzPos),
+                      demandPosKey.set(altAzCoordDemand),
+                      currentPosRaDecKey.set(currentPosRaDec),
+                      demandPosRaDecKey.set(demandPosRaDec)
+                    )
                   publisher.publish(newEvent)
-                  new EventHandlerActor(ctx, cswCtx, Some(newPos))
+                  new EventHandlerActor(ctx, cswCtx, Some(newAltAzPos))
                 case None =>
                   new EventHandlerActor(ctx, cswCtx, Some(altAzCoordDemand))
               }
