@@ -171,13 +171,20 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     if (publishDemands) {
         publishMcsDemand(mcsAzDeg, mcsElDeg);
-        if (!(std::isnan(baseDeg) || std::isnan(capDeg)) && ++publishCounter % 5 == 0) {
+        if (std::isnan(baseDeg) || std::isnan(capDeg)) {
+            printf("XXX base cap out of range\n");
+        } else if (++publishCounter % 5 == 0) {
             publishCounter = 0;
             publishEcsDemand(baseDeg, capDeg);
         }
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }
+
+
+//else {
+//printf("XXX base cap out of range\n");
+//}
 
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
 // Args are in degrees.

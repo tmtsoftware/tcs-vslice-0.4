@@ -18,7 +18,7 @@
    waits for a semaphore to be released, executes its scan method and 
    then goes back to waiting for the semaphore. The class method 
    startScheduler creates a thread (running at the highest available 
-   priority) that unlocks thesemaphore of each ScanTask object at the 
+   priority) that unlocks the semaphore of each ScanTask object at the
    appropriate interval. The waitForScan method enables other threads
    to pause until the ScanTask thread has executed a complete 
    iteration.

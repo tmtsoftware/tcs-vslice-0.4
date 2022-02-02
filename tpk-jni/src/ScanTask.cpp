@@ -127,7 +127,7 @@ extern "C" [[noreturn]] void *ScanTask::scheduler(void *) {
             --(task->TickCount);
         }
 
-        // Wait for the one tick (10ms)
+        // Wait for the one tick (1ms)
         struct timespec interval{};
         interval.tv_sec = 0;
         interval.tv_nsec = 1000000;

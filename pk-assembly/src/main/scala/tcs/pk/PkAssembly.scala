@@ -143,7 +143,6 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
       setup.commandName.name match {
         case "SlewToTarget" =>
           val pos = setup(basePosKey).head
-          setOffset(0.0, 0.0, "ICRS")
           slewToTarget(runId, pos)
         case "SetOffset" =>
           val x        = setup(xCoordinateKey).head
@@ -164,12 +163,15 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
         log.info(s"SlewToTarget ${Angle.raToString(ra.toRadian)}, ${Angle.deToString(dec.toRadian)} ($frame)")
         frame match {
           case ICRS =>
+            setOffset(0.0, 0.0, "ICRS")
             tpkc.newICRSTarget(ra.toDegree, dec.toDegree)
           case FK5 =>
+            setOffset(0.0, 0.0, "FK5")
             tpkc.newFK5Target(ra.toDegree, dec.toDegree)
         }
         CommandResponse.Completed(runId)
       case AltAzCoord(_, alt, az) =>
+        setOffset(0.0, 0.0, "AzEl")
         log.info(s"SlewToTarget ${Angle.deToString(alt.toRadian)}, ${Angle.raToString(az.toRadian)} (Alt/Az)")
         tpkc.newAzElTarget(az.toDegree, alt.toDegree)
         CommandResponse.Completed(runId)

@@ -72,6 +72,8 @@ object McsAssemblyHandlers {
     }
   }
 
+  private var xxxOldDemand: Option[AltAzCoord] = None
+
   private class EventHandlerActor(ctx: ActorContext[Event], cswCtx: CswContext, maybeCurrentPos: Option[AltAzCoord] = None)
       extends AbstractBehavior[Event](ctx) {
     import EventHandlerActor._
@@ -83,16 +85,31 @@ object McsAssemblyHandlers {
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
+//          log.info(s"XXX MCS received event: $e")
           if (e.eventKey == pkMountDemandPosEventKey) {
-            // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
+            // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
             // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
             count = (count + 1) % 100
-            if (count == 0) {
-              val altAzCoordDemand = e(pkDemandPosKey).head
-              maybeCurrentPos match {
-                case Some(currentPos) =>
-                  val siderealTimeHours = e(pkSiderealTimeKey).head
-                  val newAltAzPos       = getNextPos(altAzCoordDemand, currentPos)
+            val altAzCoordDemand = e(pkDemandPosKey).head
+
+//            // XXX-================
+//            if (xxxOldDemand.nonEmpty) {
+//              val old     = xxxOldDemand.get
+//              val altDiff = math.abs(old.alt.uas - altAzCoordDemand.alt.uas) * Angle.Uas2S
+//              val azDiff  = math.abs(old.az.uas - altAzCoordDemand.az.uas) * Angle.Uas2S
+//              val distR =
+//                Angle.distance(old.az.toRadian, old.alt.toRadian, altAzCoordDemand.az.toRadian, altAzCoordDemand.alt.toRadian)
+//              val dist = distR * Angle.R2S
+//              log.info(s"XXX Demand diff: alt: $altDiff arcsecs, az: $azDiff arcsecs, dist: $dist arcsecs ($distR radians)")
+//            }
+//            xxxOldDemand = Some(altAzCoordDemand)
+//            // XXX -====================
+
+            maybeCurrentPos match {
+              case Some(currentPos) =>
+                val siderealTimeHours = e(pkSiderealTimeKey).head
+                val newAltAzPos       = getNextPos(altAzCoordDemand, currentPos)
+                if (count == 0) {
                   // Add RA, Dec values for the demand and current positions
                   val currentPosRaDec = altAzToRaDec(siderealTimeHours, newAltAzPos)
                   val demandPosRaDec  = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
@@ -104,12 +121,11 @@ object McsAssemblyHandlers {
                       demandPosRaDecKey.set(demandPosRaDec)
                     )
                   publisher.publish(newEvent)
-                  new EventHandlerActor(ctx, cswCtx, Some(newAltAzPos))
-                case None =>
-                  new EventHandlerActor(ctx, cswCtx, Some(altAzCoordDemand))
-              }
+                }
+                new EventHandlerActor(ctx, cswCtx, Some(newAltAzPos))
+              case None =>
+                new EventHandlerActor(ctx, cswCtx, Some(altAzCoordDemand))
             }
-            else Behaviors.same
           }
           else Behaviors.same
         case x =>
@@ -118,17 +134,21 @@ object McsAssemblyHandlers {
       }
     }
 
-    // Simulate converging on the target
-    private def getNextPos(targetPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
+    // Simulate converging on the demand target
+    private def getNextPos(demandPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
+      val distArcsecs =
+        Angle.distance(demandPos.az.toRadian, demandPos.alt.toRadian, currentPos.az.toRadian, currentPos.alt.toRadian) * Angle.R2S
+      log.info(s"MCS getNextPos dist: $distArcsecs")
+
       // The max slew for az is 2.5 deg/sec.  Max for el is 1.0 deg/sec
-      val azSpeed = 2.5 // deg/sec
-      val elSpeed = 1.0 // deg/sec
-      val rate    = 1.0 // hz
-      val factor  = 2.0 // Speedup factor for test/demo
+      val azSpeed = 2.5   // deg/sec
+      val elSpeed = 1.0   // deg/sec
+      val rate    = 100.0 // hz
+      val factor  = 1.0   // Speedup factor for test/demo
       AltAzCoord(
-        targetPos.tag,
-        SimulationUtil.move(elSpeed * factor, rate, targetPos.alt, currentPos.alt),
-        SimulationUtil.move(azSpeed * factor, rate, targetPos.az, currentPos.az)
+        demandPos.tag,
+        SimulationUtil.move(elSpeed * factor, rate, demandPos.alt, currentPos.alt),
+        SimulationUtil.move(azSpeed * factor, rate, demandPos.az, currentPos.az)
       )
     }
   }
