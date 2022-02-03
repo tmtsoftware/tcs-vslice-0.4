@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.7] - 2022-02-03
+
+### Changed
+
+* Added field "posRaDec" of type EqCoord to the TCS.PointingKernelAssembly's MountDemandPosition event
+* Changed the MCS assembly to simulate slewing to target on the basis of the RA,Dec coordinates received from the PointingKernelAssembly
+* Added an integration test and standalone test app under tcs-deploy that tests a container with the pk, mcs and enc assemblies.
+* Changed the MJD time used when the TPK_USE_FAKE_SYSTEM_CLOCK environment variable is set be midnight Hawaiian time
+
 ## [tcs-vslice v0.6] - 2022-01-31
 
 ### Changed
