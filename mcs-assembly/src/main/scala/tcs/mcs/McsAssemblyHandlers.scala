@@ -84,7 +84,7 @@ object McsAssemblyHandlers {
       msg match {
         case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey && e.paramSet.isEmpty =>
           // Check for corrupted event from C with Embedded Redis:
-          log.error(s"MCS Received corrupted event: $e")
+          log.error(s"MCS Received empty event: $e")
 
         case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey =>
           // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
