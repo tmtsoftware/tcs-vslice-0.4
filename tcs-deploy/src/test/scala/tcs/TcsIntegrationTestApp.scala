@@ -1,6 +1,6 @@
 package tcs
 
-import akka.actor.typed.{ActorSystem, SpawnProtocol}
+import akka.actor.typed.{ActorRef, ActorSystem, Scheduler, SpawnProtocol}
 import akka.util.Timeout
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
@@ -25,6 +25,7 @@ import java.net.InetAddress
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import Angle._
+import akka.actor.typed.scaladsl.AskPattern.Askable
 import tcs.EventHandler.StopTest
 
 // This is a standalone app that expects csw-services to be already running!
@@ -41,12 +42,12 @@ object TcsIntegrationTestApp extends App {
     "TCS.MCSAssembly.MountPosition"
   ).map(EventKey.apply)
 
-  implicit val actorSystem: ActorSystem[SpawnProtocol.Command] =
-    ActorSystemFactory.remote(SpawnProtocol(), "TcsIntegrationTestApp")
-  implicit val timeout: Timeout = Timeout(3.minutes)
-  val loggingSystem             = LoggingSystemFactory.start("TcsIntegrationTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
-  implicit lazy val log: Logger = new LoggerFactory(prefix).getLogger
-  val locationService           = HttpLocationServiceFactory.makeLocalClient(actorSystem)
+  implicit val actorSystem: ActorSystem[SpawnProtocol.Command] = ActorSystemFactory.remote(SpawnProtocol(), "TcsIntegrationTestApp")
+  implicit val sched: Scheduler                                = actorSystem.scheduler
+  implicit val timeout: Timeout                                = Timeout(3.minutes)
+  val loggingSystem                                            = LoggingSystemFactory.start("TcsIntegrationTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
+  implicit lazy val log: Logger                                = new LoggerFactory(prefix).getLogger
+  val locationService                                          = HttpLocationServiceFactory.makeLocalClient(actorSystem)
   lazy val eventService: EventService = {
     new EventServiceFactory().make(locationService)(actorSystem)
   }
@@ -55,7 +56,7 @@ object TcsIntegrationTestApp extends App {
   val eventHandler      = actorSystem.spawn(EventHandler.make(testActor), "EventHandler")
   val eventSubscription = subscriber.subscribeActorRef(eventKeys, eventHandler)
 
-  private def slewToTarget(ra: Angle, dec: Angle): Unit = {
+  private def slewToTarget(ra: Angle, dec: Angle, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
     val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
     val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
     val eqCoord = EqCoord(
@@ -74,12 +75,17 @@ object TcsIntegrationTestApp extends App {
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
     assert(resp == Completed(resp.runId))
-    log.info(s"Matched demand to $raDecStr")
+    Thread.sleep(1000) // Wait for new demand
+    val t1 = System.currentTimeMillis()
+    assert(Await.result(testActor ? EventHandler.MatchDemand, timeout.duration))
+    val t2   = System.currentTimeMillis()
+    val secs = (t2 - t1) / 1000.0
+    log.info(s"Matched demand to $raDecStr (time: $secs secs)")
   }
 
-  slewToTarget(10.arcHour, 30.degree)
-  slewToTarget(15.arcHour, 40.degree)
-  slewToTarget(5.arcHour, 25.degree)
+  slewToTarget(10.arcHour, 30.degree, testActor)
+  slewToTarget(15.arcHour, 40.degree, testActor)
+  slewToTarget(5.arcHour, 25.degree, testActor)
 
 //  loggingSystem.stop
   eventSubscription.unsubscribe()

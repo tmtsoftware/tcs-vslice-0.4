@@ -1,9 +1,10 @@
 package tcs
 
-import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern.Askable
+import akka.actor.typed.{ActorRef, Scheduler}
 import akka.util.Timeout
 import csw.command.client.CommandServiceFactory
+import csw.command.client.messages.{ContainerMessage, SupervisorContainerCommonMessages}
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.logging.api.scaladsl.Logger
@@ -43,13 +44,20 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     "TCS.MCSAssembly.MountPosition"
   ).map(EventKey.apply)
 
+  implicit val sched: Scheduler = actorSystem.scheduler
   implicit val timeout: Timeout = Timeout(3.minutes)
   LoggingSystemFactory.start("LoggingTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
-  implicit lazy val log: Logger = new LoggerFactory(prefix).getLogger
+  implicit lazy val log: Logger             = new LoggerFactory(prefix).getLogger
+  var container: ActorRef[ContainerMessage] = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    spawnContainer(com.typesafe.config.ConfigFactory.load("McsEncPkContainer.conf"))
+    container = spawnContainer(com.typesafe.config.ConfigFactory.load("McsEncPkContainer.conf"))
+  }
+
+  override protected def afterAll(): Unit = {
+    container ! SupervisorContainerCommonMessages.Shutdown
+    super.afterAll()
   }
 
   test("Assemblies should be locatable using Location Service") {
@@ -67,14 +75,13 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     log.info("Located ENCAssembly")
   }
 
-  private def slewToTarget(ra: Angle, dec: Angle): Unit = {
+  private def slewToTarget(ra: Angle, dec: Angle, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
     val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
     val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
     val eqCoord = EqCoord(
       ra = ra,
       dec = dec,
       frame = ICRS,
-      //      frame = FK5,
       pmx = 0,
       pmy = 0
     )
@@ -86,7 +93,12 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
     assert(resp == Completed(resp.runId))
-    log.info(s"Matched demand to $raDecStr")
+    Thread.sleep(1000) // Wait for new demand
+    val t1 = System.currentTimeMillis()
+    assert(Await.result(testActor ? EventHandler.MatchDemand, timeout.duration))
+    val t2   = System.currentTimeMillis()
+    val secs = (t2 - t1) / 1000.0
+    log.info(s"Matched demand to $raDecStr (time: $secs secs)")
   }
 
   test("SlewToTarget command to pk assembly should cause MCS and ENC events to show eventual move to target") {
@@ -98,15 +110,12 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     val eventHandler      = actorSystem.spawn(EventHandler.make(testActor), "EventHandler")
     val eventSubscription = subscriber.subscribeActorRef(eventKeys, eventHandler)
 
-    slewToTarget(10.arcHour, 30.degree)
-    slewToTarget(15.arcHour, 40.degree)
-    slewToTarget(5.arcHour, 25.degree)
+    slewToTarget(10.arcHour, 30.degree, testActor)
+    slewToTarget(15.arcHour, 40.degree, testActor)
+    slewToTarget(5.arcHour, 25.degree, testActor)
 
-    eventSubscription.unsubscribe()
+    Await.ready(eventSubscription.unsubscribe(), timeout.duration)
     testActor ! StopTest
-
-    actorSystem.terminate()
-    System.exit(0)
   }
 
 }

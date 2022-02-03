@@ -54,7 +54,7 @@ object McsAssemblyHandlers {
      *
      * @param st sidereal time in hours
      * @param pos the alt/az coordinates
-     * @param lat site's latitude in deg (default: for Hawaii)
+     * @param latDeg site's latitude in deg (default: for Hawaii)
      * @return the ra.dec coords
      */
     private def altAzToRaDec(st: Double, pos: AltAzCoord, latDeg: Double = 19.82900194): EqCoord = {
@@ -72,47 +72,31 @@ object McsAssemblyHandlers {
     }
   }
 
-  private var xxxOldDemand: Option[AltAzCoord] = None
-
-  private class EventHandlerActor(ctx: ActorContext[Event], cswCtx: CswContext, maybeCurrentPos: Option[AltAzCoord] = None)
-      extends AbstractBehavior[Event](ctx) {
+  private class EventHandlerActor(ctx: ActorContext[Event], cswCtx: CswContext) extends AbstractBehavior[Event](ctx) {
     import EventHandlerActor._
     import cswCtx._
-    private val log       = loggerFactory.getLogger
-    private val publisher = cswCtx.eventService.defaultPublisher
-    private var count     = 0
+    private val log                                 = loggerFactory.getLogger
+    private val publisher                           = cswCtx.eventService.defaultPublisher
+    private var count                               = 0
+    private var maybeCurrentPos: Option[AltAzCoord] = None
 
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
         case e: SystemEvent =>
-//          log.info(s"XXX MCS received event: $e")
           if (e.eventKey == pkMountDemandPosEventKey) {
             // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
             // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
             count = (count + 1) % 100
             val altAzCoordDemand = e(pkDemandPosKey).head
 
-//            // XXX-================
-//            if (xxxOldDemand.nonEmpty) {
-//              val old     = xxxOldDemand.get
-//              val altDiff = math.abs(old.alt.uas - altAzCoordDemand.alt.uas) * Angle.Uas2S
-//              val azDiff  = math.abs(old.az.uas - altAzCoordDemand.az.uas) * Angle.Uas2S
-//              val distR =
-//                Angle.distance(old.az.toRadian, old.alt.toRadian, altAzCoordDemand.az.toRadian, altAzCoordDemand.alt.toRadian)
-//              val dist = distR * Angle.R2S
-//              log.info(s"XXX Demand diff: alt: $altDiff arcsecs, az: $azDiff arcsecs, dist: $dist arcsecs ($distR radians)")
-//            }
-//            xxxOldDemand = Some(altAzCoordDemand)
-//            // XXX -====================
-
             maybeCurrentPos match {
               case Some(currentPos) =>
-                val siderealTimeHours = e(pkSiderealTimeKey).head
-                val newAltAzPos       = getNextPos(altAzCoordDemand, currentPos)
+                val newAltAzPos = getNextPos(altAzCoordDemand, currentPos)
                 if (count == 0) {
                   // Add RA, Dec values for the demand and current positions
-                  val currentPosRaDec = altAzToRaDec(siderealTimeHours, newAltAzPos)
-                  val demandPosRaDec  = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
+                  val siderealTimeHours = e(pkSiderealTimeKey).head
+                  val currentPosRaDec   = altAzToRaDec(siderealTimeHours, newAltAzPos)
+                  val demandPosRaDec    = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
                   val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
                     .madd(
                       currentPosKey.set(newAltAzPos),
@@ -122,29 +106,28 @@ object McsAssemblyHandlers {
                     )
                   publisher.publish(newEvent)
                 }
-                new EventHandlerActor(ctx, cswCtx, Some(newAltAzPos))
+                maybeCurrentPos = Some(newAltAzPos)
               case None =>
-                new EventHandlerActor(ctx, cswCtx, Some(altAzCoordDemand))
+                maybeCurrentPos = Some(altAzCoordDemand)
             }
           }
-          else Behaviors.same
         case x =>
           log.error(s"Expected SystemEvent but got $x")
-          Behaviors.same
       }
+      Behaviors.same
     }
 
     // Simulate converging on the demand target
     private def getNextPos(demandPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
-      val distArcsecs =
-        Angle.distance(demandPos.az.toRadian, demandPos.alt.toRadian, currentPos.az.toRadian, currentPos.alt.toRadian) * Angle.R2S
-      log.info(s"MCS getNextPos dist: $distArcsecs")
+//      val altDiff = math.abs(demandPos.alt.uas - currentPos.alt.uas) * Angle.Uas2S
+//      val azDiff  = math.abs(demandPos.az.uas - currentPos.az.uas) * Angle.Uas2S
+//      log.info(s"MCS getNextPos diff alt: $altDiff arcsec, az: $azDiff arcsec")
 
       // The max slew for az is 2.5 deg/sec.  Max for el is 1.0 deg/sec
-      val azSpeed = 2.5   // deg/sec
-      val elSpeed = 1.0   // deg/sec
-      val rate    = 100.0 // hz
-      val factor  = 1.0   // Speedup factor for test/demo
+      val azSpeed = 2.5  // deg/sec
+      val elSpeed = 1.0  // deg/sec
+      val rate    = 100  // hz
+      val factor  = 10.0 // Speedup factor for test/demo
       AltAzCoord(
         demandPos.tag,
         SimulationUtil.move(elSpeed * factor, rate, demandPos.alt, currentPos.alt),

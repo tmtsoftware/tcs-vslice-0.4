@@ -14,7 +14,7 @@ class SimulationUtilTest extends AnyFunSuite {
     // The max slew for az is 2.5 deg/sec.  Max for el is 1.0 deg/sec
     val azSpeed = 2.5 // deg/sec
     val elSpeed = 1.0 // deg/sec
-    val rate    = 1.0 // hz
+    val rate    = 1   // hz
     val factor  = 2.0 // Speedup factor for test/demo
     AltAzCoord(
       targetPos.tag,

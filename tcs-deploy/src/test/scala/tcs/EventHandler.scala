@@ -29,8 +29,9 @@ object EventHandler {
     }
   }
   class TestActor(ctx: ActorContext[TestActorMessages]) extends AbstractBehavior[TestActorMessages](ctx) {
+    var maybeReplyTo: Option[ActorRef[Boolean]] = None
+
     override def onMessage(msg: TestActorMessages): Behavior[TestActorMessages] = {
-      var maybeReplyTo: Option[ActorRef[Boolean]] = None
       msg match {
         case MatchDemand(replyTo) =>
           maybeReplyTo = Some(replyTo)

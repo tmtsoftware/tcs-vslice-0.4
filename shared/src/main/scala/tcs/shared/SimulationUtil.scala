@@ -13,15 +13,9 @@ object SimulationUtil {
    * @param current current coord
    * @return the next position
    */
-  def move(speed: Double, rate: Double, demand: Angle, current: Angle): Angle = {
-    val factor = 0.5 // slow down this much when near target
-    val limit  = 2 * speed / rate
-    val diff   = (demand - current).toDegree
-    val d      = Math.abs(diff)
-    val sign   = Math.signum(diff)
-    if (d > limit)
-      current + (speed / rate * sign).degree
-    else
-      current + (diff * factor).degree
+  def move(speed: Double, rate: Int, demand: Angle, current: Angle): Angle = {
+    // XXX TODO FIXME
+    val diff = demand.uas - current.uas
+    Angle(current.uas + diff / 2)
   }
 }
