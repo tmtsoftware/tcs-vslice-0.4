@@ -46,6 +46,10 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     "TCS.MCSAssembly.MountPosition"
   ).map(EventKey.apply)
 
+  // Keys for telescope offsets in arcsec
+  private val xCoordinate: Key[Double] = KeyType.DoubleKey.make("Xcoordinate")
+  private val yCoordinate: Key[Double] = KeyType.DoubleKey.make("Ycoordinate")
+
   implicit val sched: Scheduler = actorSystem.scheduler
   implicit val timeout: Timeout = Timeout(3.minutes)
   LoggingSystemFactory.start("LoggingTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
@@ -122,6 +126,22 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     log.info(s"Matched demand to $raDecStr (time: $secs secs)")
   }
 
+  private def setOffset(x: Double, y: Double, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
+    val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
+    val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
+    val setup = Setup(prefix, CommandName("SetOffset"), obsId).add(xCoordinate.set(x)).add(yCoordinate.set(y))
+    val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
+    if (resp != Completed(resp.runId))
+      log.error(s"Received error response from SetOffset $x $y (arcsec)")
+    assert(resp == Completed(resp.runId))
+    Thread.sleep(1000) // Wait for new demand
+    val t1 = System.currentTimeMillis()
+    assert(Await.result(testActor ? EventHandler.MatchDemand, timeout.duration))
+    val t2   = System.currentTimeMillis()
+    val secs = (t2 - t1) / 1000.0
+    log.info(s"Matched offset $x $y demand (time: $secs secs)")
+  }
+
   test("SlewToTarget command to pk assembly should cause MCS and ENC events to show eventual move to target") {
     import Angle._
     implicit val sched: Scheduler = actorSystem.scheduler
@@ -133,7 +153,9 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
 
     slewToTarget(10.arcHour, 30.degree, testActor)
     slewToTarget(11.arcHour, 27.degree, testActor)
+    setOffset(5, 10, testActor)
     slewToTarget(12.arcHour, 65.degree, testActor)
+    setOffset(10, 5, testActor)
 
     Await.ready(eventSubscription.unsubscribe(), timeout.duration)
     testActor ! StopTest
