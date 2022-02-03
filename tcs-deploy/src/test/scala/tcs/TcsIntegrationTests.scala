@@ -114,7 +114,7 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
     val raDecStr = s"RA=${Angle.raToString(ra.toRadian)}, Dec=${Angle.deToString(dec.toRadian)}"
-    val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
+    val resp     = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
     assert(resp == Completed(resp.runId))
@@ -129,8 +129,8 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
   private def setOffset(x: Double, y: Double, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
     val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
     val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
-    val setup = Setup(prefix, CommandName("SetOffset"), obsId).add(xCoordinate.set(x)).add(yCoordinate.set(y))
-    val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
+    val setup          = Setup(prefix, CommandName("SetOffset"), obsId).add(xCoordinate.set(x)).add(yCoordinate.set(y))
+    val resp           = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SetOffset $x $y (arcsec)")
     assert(resp == Completed(resp.runId))

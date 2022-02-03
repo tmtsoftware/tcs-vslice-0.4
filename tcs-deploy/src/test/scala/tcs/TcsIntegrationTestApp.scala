@@ -70,7 +70,7 @@ object TcsIntegrationTestApp extends App {
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
     val raDecStr = s"RA=${Angle.raToString(ra.toRadian)}, Dec=${Angle.deToString(dec.toRadian)}"
-    val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
+    val resp     = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
     assert(resp == Completed(resp.runId))
