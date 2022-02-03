@@ -38,8 +38,6 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
   private val slewToTargetCommandName = CommandName("SlewToTarget")
   private val obsId                   = None
   private val eventKeys = Set(
-    "TCS.PointingKernelAssembly.MountDemandPosition",
-    "TCS.PointingKernelAssembly.EnclosureDemandPosition",
     "TCS.ENCAssembly.CurrentPosition",
     "TCS.MCSAssembly.MountPosition"
   ).map(EventKey.apply)

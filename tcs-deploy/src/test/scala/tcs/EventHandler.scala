@@ -75,8 +75,6 @@ class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.Te
   var maybeCapDemand: Option[Double]      = None
   var maybeCapCurrent: Option[Double]     = None
 
-  var matchCount = 0
-
   private def isEmpty =
     maybeDemandPos.isEmpty ||
       maybeCurrentPos.isEmpty ||
@@ -131,12 +129,7 @@ class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.Te
 
     if (isDemandMatched) {
       testActor ! DemandMatched
-      matchCount = matchCount + 1
-      log.info(s"Matched demand $matchCount")
     }
-    if (matchCount >= 3)
-      Behaviors.stopped
-    else
-      Behaviors.same
+    Behaviors.same
   }
 }

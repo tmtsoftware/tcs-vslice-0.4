@@ -82,38 +82,41 @@ object McsAssemblyHandlers {
 
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
-        case e: SystemEvent =>
-          if (e.eventKey == pkMountDemandPosEventKey) {
-            // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
-            // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
-            count = (count + 1) % 100
-            val altAzCoordDemand = e(pkDemandPosKey).head
+        case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey && e.paramSet.isEmpty =>
+          // Check for corrupted event from C with Embedded Redis:
+          log.error(s"MCS Received corrupted event: $e")
 
-            maybeCurrentPos match {
-              case Some(currentPos) =>
-                val newAltAzPos = getNextPos(altAzCoordDemand, currentPos)
-                if (count == 0) {
-                  // Add RA, Dec values for the demand and current positions
-                  val siderealTimeHours = e(pkSiderealTimeKey).head
-                  val currentPosRaDec   = altAzToRaDec(siderealTimeHours, newAltAzPos)
-                  val demandPosRaDec    = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
-                  val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
-                    .madd(
-                      currentPosKey.set(newAltAzPos),
-                      demandPosKey.set(altAzCoordDemand),
-                      currentPosRaDecKey.set(currentPosRaDec),
-                      demandPosRaDecKey.set(demandPosRaDec)
-                    )
-                  publisher.publish(newEvent)
-                }
-                maybeCurrentPos = Some(newAltAzPos)
-              case None =>
-                maybeCurrentPos = Some(altAzCoordDemand)
-            }
+        case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey =>
+          // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
+          // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
+          count = (count + 1) % 100
+          val altAzCoordDemand = e(pkDemandPosKey).head
+
+          maybeCurrentPos match {
+            case Some(currentPos) =>
+              val newAltAzPos = getNextPos(altAzCoordDemand, currentPos)
+              if (count == 0) {
+                // Add RA, Dec values for the demand and current positions
+                val siderealTimeHours = e(pkSiderealTimeKey).head
+                val currentPosRaDec   = altAzToRaDec(siderealTimeHours, newAltAzPos)
+                val demandPosRaDec    = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
+                val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
+                  .madd(
+                    currentPosKey.set(newAltAzPos),
+                    demandPosKey.set(altAzCoordDemand),
+                    currentPosRaDecKey.set(currentPosRaDec),
+                    demandPosRaDecKey.set(demandPosRaDec)
+                  )
+                publisher.publish(newEvent)
+              }
+              maybeCurrentPos = Some(newAltAzPos)
+            case None =>
+              maybeCurrentPos = Some(altAzCoordDemand)
           }
         case x =>
           log.error(s"Expected SystemEvent but got $x")
       }
+
       Behaviors.same
     }
 
