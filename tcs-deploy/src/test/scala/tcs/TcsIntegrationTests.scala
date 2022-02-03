@@ -1,10 +1,13 @@
 package tcs
 
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.AskPattern.Askable
 import akka.actor.typed.{ActorRef, Scheduler}
 import akka.util.Timeout
 import csw.command.client.CommandServiceFactory
+import csw.command.client.messages.ContainerCommonMessage.GetContainerLifecycleState
 import csw.command.client.messages.{ContainerMessage, SupervisorContainerCommonMessages}
+import csw.command.client.models.framework.ContainerLifecycleState
 import csw.location.api.models.Connection.AkkaConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.logging.api.scaladsl.Logger
@@ -27,6 +30,7 @@ import java.net.InetAddress
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+// Tests the TCS assembly together with the MCS and ENC assemblies
 class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventServer) with AnyFunSuiteLike {
   import frameworkTestKit._
   private val pkConnection  = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
@@ -48,9 +52,29 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
   implicit lazy val log: Logger             = new LoggerFactory(prefix).getLogger
   var container: ActorRef[ContainerMessage] = _
 
+  private def assertThatContainerIsRunning(
+      containerRef: ActorRef[ContainerMessage],
+      probe: TestProbe[ContainerLifecycleState],
+      duration: Duration
+  ): Unit = {
+    def getContainerLifecycleState: ContainerLifecycleState = {
+      containerRef ! GetContainerLifecycleState(probe.ref)
+      probe.expectMessageType[ContainerLifecycleState]
+    }
+
+    eventually(timeout(duration))(
+      assert(
+        getContainerLifecycleState == ContainerLifecycleState.Running,
+        s"expected :${ContainerLifecycleState.Running}, found :$getContainerLifecycleState"
+      )
+    )
+  }
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     container = spawnContainer(com.typesafe.config.ConfigFactory.load("McsEncPkContainer.conf"))
+    val containerLifecycleStateProbe: TestProbe[ContainerLifecycleState] = TestProbe[ContainerLifecycleState]()
+    assertThatContainerIsRunning(container, containerLifecycleStateProbe, timeout.duration)
   }
 
   override protected def afterAll(): Unit = {
@@ -86,7 +110,6 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
     val raDecStr = s"RA=${Angle.raToString(ra.toRadian)}, Dec=${Angle.deToString(dec.toRadian)}"
-    log.info(s"SlewToTarget $raDecStr")
     val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
@@ -109,8 +132,8 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     val eventSubscription = subscriber.subscribeActorRef(eventKeys, eventHandler)
 
     slewToTarget(10.arcHour, 30.degree, testActor)
-    slewToTarget(15.arcHour, 40.degree, testActor)
-    slewToTarget(5.arcHour, 25.degree, testActor)
+    slewToTarget(11.arcHour, 27.degree, testActor)
+    slewToTarget(12.arcHour, 65.degree, testActor)
 
     Await.ready(eventSubscription.unsubscribe(), timeout.duration)
     testActor ! StopTest

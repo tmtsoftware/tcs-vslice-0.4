@@ -6,7 +6,7 @@ import csw.logging.api.scaladsl.Logger
 import csw.logging.client.scaladsl.LoggerFactory
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Angle
-import csw.params.core.models.Coords.AltAzCoord
+import csw.params.core.models.Coords.EqCoord
 import csw.params.events.{Event, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 
@@ -51,11 +51,9 @@ object EventHandler {
   }
 
   // MCS event
-  private val mcsTelPosEventName             = EventName("MountPosition")
-  private val currentPosKey: Key[AltAzCoord] = KeyType.AltAzCoordKey.make("current")
-  private val demandPosKey: Key[AltAzCoord]  = KeyType.AltAzCoordKey.make("demand")
-  //    private val currentPosRaDecKey: Key[EqCoord] = KeyType.EqCoordKey.make("currentPos")
-  //    private val demandPosRaDecKey: Key[EqCoord]  = KeyType.EqCoordKey.make("demandPos")
+  private val mcsTelPosEventName          = EventName("MountPosition")
+  private val currentPosKey: Key[EqCoord] = KeyType.EqCoordKey.make("currentPos")
+  private val demandPosKey: Key[EqCoord]  = KeyType.EqCoordKey.make("demandPos")
 
   // ENC event
   private val encTelPosEventName          = EventName("CurrentPosition")
@@ -68,12 +66,12 @@ object EventHandler {
 class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.TestActorMessages]) extends AbstractBehavior[Event](ctx) {
   import EventHandler._
 
-  var maybeDemandPos: Option[AltAzCoord]  = None
-  var maybeCurrentPos: Option[AltAzCoord] = None
-  var maybeBaseDemand: Option[Double]     = None
-  var maybeBaseCurrent: Option[Double]    = None
-  var maybeCapDemand: Option[Double]      = None
-  var maybeCapCurrent: Option[Double]     = None
+  var maybeDemandPos: Option[EqCoord]  = None
+  var maybeCurrentPos: Option[EqCoord] = None
+  var maybeBaseDemand: Option[Double]  = None
+  var maybeBaseCurrent: Option[Double] = None
+  var maybeCapDemand: Option[Double]   = None
+  var maybeCapCurrent: Option[Double]  = None
 
   private def isEmpty =
     maybeDemandPos.isEmpty ||
@@ -92,39 +90,42 @@ class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.Te
       false
     }
     else {
-      val posDiffAlt = math.abs(maybeDemandPos.get.alt.uas - maybeCurrentPos.get.alt.uas)
-      val posDiffAz  = math.abs(maybeDemandPos.get.az.uas - maybeCurrentPos.get.az.uas)
+      val posDiffRa  = math.abs(maybeDemandPos.get.ra.uas - maybeCurrentPos.get.ra.uas)
+      val posDiffDec = math.abs(maybeDemandPos.get.dec.uas - maybeCurrentPos.get.dec.uas)
       val baseDiff   = math.abs(maybeBaseDemand.get - maybeBaseCurrent.get)
       val capDiff    = math.abs(maybeCapDemand.get - maybeCapCurrent.get)
 
-      if (posDiffAlt > closeEnoughUas)
-        log.info(s"DemandPos Alt and CurrentPos Alt do not match: Diff: ${posDiffAlt * Angle.Uas2S} arcsec")
-      if (posDiffAz > closeEnoughUas)
-        log.info(s"DemandPos Az and CurrentPos Az do not match: Diff: ${posDiffAz * Angle.Uas2S} arcsec")
-      if (baseDiff > closeEnoughUas)
-        log.info(s"baseDemand and Current base do not match: Diff: $baseDiff")
-      if (capDiff > closeEnoughUas)
-        log.info(s"capDemand and Current cap do not match: Diff: $capDiff")
+//      if (posDiffRa > closeEnoughUas)
+//        log.info(s"XXX DemandPos RA and CurrentPos RA do not match: Diff: ${posDiffRa * Angle.Uas2S} arcsec ( ${posDiffRa * Angle.Uas2D} deg)")
+//      if (posDiffDec > closeEnoughUas)
+//        log.info(
+//          s"XXX DemandPos Dec and CurrentPos Dec do not match: Diff: ${posDiffDec * Angle.Uas2S} arcsec (${posDiffDec * Angle.Uas2D} deg)"
+//        )
+//      if (baseDiff > closeEnoughUas)
+//        log.info(s"XXX baseDemand and Current base do not match: Diff: $baseDiff")
+//      if (capDiff > closeEnoughUas)
+//        log.info(s"XXX capDemand and Current cap do not match: Diff: $capDiff")
 
-      posDiffAlt < closeEnoughUas && posDiffAz < closeEnoughUas && baseDiff < closeEnoughUas && capDiff < closeEnoughUas
+      posDiffRa < closeEnoughUas && posDiffDec < closeEnoughUas && baseDiff < closeEnoughUas && capDiff < closeEnoughUas
     }
   }
 
   override def onMessage(msg: Event): Behavior[Event] = {
-//    log.info(s"XXX XXX received event: $msg")
+//    log.info(s"XXX XXX Test EventHandler: received event: $msg")
     msg match {
-      case e: SystemEvent if e.eventName == mcsTelPosEventName =>
+      case e: SystemEvent if e.eventName == mcsTelPosEventName && e.paramSet.nonEmpty =>
         maybeDemandPos = Some(e(demandPosKey).head)
         maybeCurrentPos = Some(e(currentPosKey).head)
 
-      case e: SystemEvent if e.eventName == encTelPosEventName =>
+      case e: SystemEvent if e.eventName == encTelPosEventName && e.paramSet.nonEmpty =>
         maybeBaseDemand = Some(e(baseDemandKey).head)
         maybeCapDemand = Some(e(capDemandKey).head)
         maybeBaseCurrent = Some(e(baseCurrentKey).head)
         maybeCapCurrent = Some(e(capCurrentKey).head)
 
       case x =>
-        log.error(s"Unexpected event: $x")
+        if (!x.isInvalid)
+          log.error(s"Unexpected event: $x")
     }
 
     if (isDemandMatched) {

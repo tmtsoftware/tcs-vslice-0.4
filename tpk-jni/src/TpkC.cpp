@@ -76,6 +76,7 @@ private:
     tpk::TimeKeeper &time;
     tpk::TmtMountVt &mount;
     tpk::TmtMountVt &enclosure;
+    tpk::Site &site;
 
 
     void scan() override {
@@ -100,13 +101,21 @@ private:
         double m3R = rad2Deg(mount.m3Azimuth());
         double m3T = 90.0 - rad2Deg(mount.m3Elevation());
 
-        if (tpkC)
-            tpkC->newDemands(tAz, tEl, eAz, eEl, m3R, m3T);
+        CoordPair p;
+        tpkC->azElToRaDec(tAz, tEl, &p);
+        double raDeg = p.a;
+        double decDeg = p.b;
+//        auto refSys = tpk::ICRefSys();
+//        auto pos = refSys.fromAzEl(time.tai(), site, tpk::spherical(deg2Rad(tAz), deg2Rad(tEl)));
+//        double raDeg = rad2Deg(pos.a);
+//        double decDeg = rad2Deg(pos.b);
+
+        tpkC->newDemands(tAz, tEl, eAz, eEl, m3R, m3T, raDeg, decDeg);
     }
 
 public:
-    FastScan(TpkC *pk, tpk::TimeKeeper &t, tpk::TmtMountVt &m, tpk::TmtMountVt &e) :
-            ScanTask("/FastScan", 10, 1), tpkC(pk), time(t), mount(m), enclosure(e) {
+    FastScan(TpkC *pk, tpk::TimeKeeper &t, tpk::TmtMountVt &m, tpk::TmtMountVt &e, tpk::Site &s) :
+            ScanTask("/FastScan", 10, 1), tpkC(pk), time(t), mount(m), enclosure(e), site(s) {
 
     };
 };
@@ -161,7 +170,7 @@ void TpkC::calculateBaseAndCap(double ecsAzDeg, double ecsElDeg, double &baseDeg
 
 // Called when there are new demands: All args are in deg
 void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double ecsElDeg, double m3RotationDeg,
-                      double m3TiltDeg) {
+                      double m3TiltDeg, double raDeg, double decDeg) {
     double baseDeg, capDeg;
     calculateBaseAndCap(ecsAzDeg, ecsElDeg, baseDeg, capDeg);
 
@@ -170,7 +179,7 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
     // once New target or Offset Command is being received
     // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     if (publishDemands) {
-        publishMcsDemand(mcsAzDeg, mcsElDeg);
+        publishMcsDemand(mcsAzDeg, mcsElDeg, raDeg, decDeg);
         if (std::isnan(baseDeg) || std::isnan(capDeg)) {
             printf("XXX base cap out of range\n");
         } else if (++publishCounter % 5 == 0) {
@@ -187,18 +196,25 @@ void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double 
 //}
 
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
-// Args are in degrees.
-void TpkC::publishMcsDemand(double az, double el) {
+// All args are in degrees.
+void TpkC::publishMcsDemand(double az, double el, double ra, double dec) {
     // trackID
     const char *trackIdAr[] = {"trackid-0"}; // TODO
     CswArrayValue trackIdValues = {.values = trackIdAr, .numValues = 1};
     CswParameter trackIdParam = cswMakeParameter("trackID", StringKey, trackIdValues, csw_unit_NoUnits);
 
     // pos
-    CswAltAzCoord values[1];
-    values[0] = cswMakeAltAzCoord("BASE", lround(deg2Mas(el)), lround(deg2Mas(az)));
-    CswArrayValue arrayValues = {.values = values, .numValues = 1};
+    CswAltAzCoord posValues[1];
+    posValues[0] = cswMakeAltAzCoord("BASE", lround(deg2Mas(el)), lround(deg2Mas(az)));
+    CswArrayValue arrayValues = {.values = posValues, .numValues = 1};
     CswParameter coordParam = cswMakeParameter("pos", AltAzCoordKey, arrayValues, csw_unit_NoUnits);
+
+    // posRaDec
+    CswEqCoord posRaDecValues[1];
+    posRaDecValues[0] = cswMakeEqCoord("BASE", lround(deg2Mas(ra)), lround(deg2Mas(dec)),
+                                       ICRS, "none", 0.0f, 0.0f);
+    CswArrayValue posRaDecArrayValues = {.values = posRaDecValues, .numValues = 1};
+    CswParameter posRaDecCoordParam = cswMakeParameter("posRaDec", EqCoordKey, posRaDecArrayValues, csw_unit_NoUnits);
 
     // time
     CswUtcTime timeAr[] = {cswUtcTime()};
@@ -212,8 +228,8 @@ void TpkC::publishMcsDemand(double az, double el) {
     CswParameter siderealTimeParam = cswMakeParameter("siderealTime", DoubleKey, siderealTimeValues, csw_unit_hour);
 
     // -- ParamSet
-    CswParameter params[] = {trackIdParam, coordParam, timeParam, siderealTimeParam};
-    CswParamSet paramSet = {.params = params, .numParams = 4};
+    CswParameter params[] = {trackIdParam, coordParam, posRaDecCoordParam, timeParam, siderealTimeParam};
+    CswParamSet paramSet = {.params = params, .numParams = 5};
 
     // -- Event --
     CswEvent event = cswMakeEvent(SystemEvent, prefix, "MountDemandPosition", paramSet);
@@ -351,7 +367,7 @@ void TpkC::init() {
     // Create the slow, medium and fast threads.
     SlowScan slow(*time, *site);
     MediumScan medium(*mount, *enclosure);
-    FastScan fast(this, *time, *mount, *enclosure);
+    FastScan fast(this, *time, *mount, *enclosure, *site);
 
     // Start the scheduler thread.
     ScanTask::startScheduler();
@@ -427,19 +443,19 @@ void TpkC::setAzElOffset(double azO, double elO) {
     enclosure->setOffset(a, b, refSys);
 }
 
-//void TpkC::currentPosition(CoordPair *raDec) {
-//    tpk::spherical telpos = mount->position();
-//    raDec->a = rad2Deg(telpos.a);
-//    raDec->b = rad2Deg(telpos.b);
-//}
-//
-//// Convert the given az,el coordinates (in deg) to ra,dec
-//void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
-//    auto refSys = tpk::FK5RefSys();
-//    auto pos = refSys.fromAzEl(time->tai(), *site, tpk::spherical(az, el));
-//    raDec->a = rad2Deg(pos.a);
-//    raDec->b = rad2Deg(pos.b);
-//}
+void TpkC::currentPosition(CoordPair *raDec) {
+    tpk::spherical telpos = mount->position();
+    raDec->a = rad2Deg(telpos.a);
+    raDec->b = rad2Deg(telpos.b);
+}
+
+// Convert the given az,el coordinates (in deg) to ra,dec (in deg)
+void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
+    auto refSys = tpk::FK5RefSys();
+    auto pos = refSys.fromAzEl(time->tai(), *site, tpk::spherical(deg2Rad(az), deg2Rad(el)));
+    raDec->a = rad2Deg(pos.a);
+    raDec->b = rad2Deg(pos.b);
+}
 
 // --- This provides access from C, to make it easier to access from Java ---
 
@@ -451,10 +467,6 @@ TpkC *tpkc_ctor() {
 
 void tpkc_init(TpkC *self) {
     self->init();
-}
-
-void tpkc_newDemands(TpkC *self, double mAz, double mEl, double eAz, double eEl, double m3R, double m3T) {
-    self->newDemands(mAz, mEl, eAz, eEl, m3R, m3T);
 }
 
 void tpkc_newICRSTarget(TpkC *self, double ra, double dec) {

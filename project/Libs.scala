@@ -10,6 +10,7 @@ object Libs {
 
   val `jnr-ffi` = "com.github.jnr" % "jnr-ffi" % "2.2.4"
 
+  val `akka-actor-testkit-typed` = "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.18"
   val `scalatest`     = "org.scalatest"          %% "scalatest"     % "3.2.11"    //Apache License 2.0
   val `scala-async`   = "org.scala-lang.modules" %% "scala-async"   % "1.0.1"     //BSD 3-clause "New" or "Revised" License
 }

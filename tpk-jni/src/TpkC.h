@@ -26,7 +26,7 @@ public:
 
     void init();
 
-    void newDemands(double mcsAzDeg, double mcsElDeg, double eAz, double eEl, double m3RotationDeg, double m3TiltDeg);
+    void newDemands(double mcsAzDeg, double mcsElDeg, double eAz, double eEl, double m3RotationDeg, double m3TiltDeg, double raDeg, double decDeg);
 
     void newICRSTarget(double ra, double dec);
 
@@ -40,18 +40,18 @@ public:
 
     void setAzElOffset(double azO, double elO);
 
-//    // Gets the current CurrentPosition position from the mount
-//    void currentPosition(CoordPair* raDec);
-//
-//    // Convert the given az,el coordinates (in deg) to ra,dec
-//    void azElToRaDec(double az, double el, CoordPair* raDec);
+    // Gets the current CurrentPosition position from the mount
+    void currentPosition(CoordPair* raDec);
+
+    // Convert the given az,el coordinates (in deg) to ra,dec
+    void azElToRaDec(double az, double el, CoordPair* raDec);
 
     // Calculates base and cap from the az and el coordinates (in deg)
     static void calculateBaseAndCap(double azDeg, double elDeg, double &baseDeg, double &capDeg);
 
 private:
     // Publish CSW events
-    void publishMcsDemand(double az, double el);
+    void publishMcsDemand(double az, double el, double ra, double dec);
 
     void publishEcsDemand(double base, double cap);
 

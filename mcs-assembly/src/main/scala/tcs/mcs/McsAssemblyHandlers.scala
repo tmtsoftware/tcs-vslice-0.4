@@ -3,6 +3,7 @@ package tcs.mcs
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import csw.command.client.messages.TopLevelActorMessage
+import csw.event.api.scaladsl.SubscriptionModes.RateLimiterMode
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.ComponentHandlers
 import csw.location.api.models.TrackingEvent
@@ -10,13 +11,14 @@ import csw.params.commands.CommandResponse._
 import csw.params.commands.ControlCommand
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.{AltAzCoord, EqCoord}
-import csw.params.core.models.{Angle, Id}
+import csw.params.core.models.Id
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
 import csw.time.core.models.UTCTime
 import tcs.shared.SimulationUtil
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -32,6 +34,7 @@ object McsAssemblyHandlers {
   private val pkAssemblyPrefix         = Prefix(TCS, "PointingKernelAssembly")
   private val pkMountDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
   private val pkDemandPosKey           = KeyType.AltAzCoordKey.make("pos")
+  private val pkRaDecDemandPosKey      = KeyType.EqCoordKey.make("posRaDec")
   private val pkSiderealTimeKey        = KeyType.DoubleKey.make("siderealTime")
   private val pkEventKeys              = Set(pkMountDemandPosEventKey)
 
@@ -46,104 +49,78 @@ object McsAssemblyHandlers {
     def make(cswCtx: CswContext): Behavior[Event] = {
       Behaviors.setup(ctx => new EventHandlerActor(ctx, cswCtx))
     }
-
-    /**
-     *  Convert az,el to ra,dec using the given sidereal time and site latitude.
-     * Algorithm based on http://www.stargazing.net/mas/al_az.htm.
-     * Note: The native TPK C++ code can do this, but this assembly does not use it (The pk assembly does).
-     *
-     * @param st sidereal time in hours
-     * @param pos the alt/az coordinates
-     * @param latDeg site's latitude in deg (default: for Hawaii)
-     * @return the ra.dec coords
-     */
-    private def altAzToRaDec(st: Double, pos: AltAzCoord, latDeg: Double = 19.82900194): EqCoord = {
-      import Math._
-      import Angle._
-      val lat = latDeg.degree.toRadian
-      val alt = pos.alt.toRadian
-      val az  = pos.az.toRadian
-      val dec = asin(sin(alt) * sin(lat) + cos(alt) * cos(lat) * cos(az)).radian
-      val s   = acos((sin(alt) - sin(lat) * sin(dec.toRadian)) / (cos(lat) * cos(dec.toRadian))).radian
-      val s2  = if (sin(az) > 0) 360 - s.toDegree else s.toDegree
-      val ra1 = st - s2 / 15
-      val ra  = (if (ra1 < 0) ra1 + 24 else ra1).arcHour
-      EqCoord(ra, dec, tag = pos.tag)
-    }
   }
 
   private class EventHandlerActor(ctx: ActorContext[Event], cswCtx: CswContext) extends AbstractBehavior[Event](ctx) {
+
     import EventHandlerActor._
     import cswCtx._
-    private val log                                 = loggerFactory.getLogger
-    private val publisher                           = cswCtx.eventService.defaultPublisher
-    private var count                               = 0
-    private var maybeCurrentPos: Option[AltAzCoord] = None
+
+    private val log                                   = loggerFactory.getLogger
+    private val publisher                             = cswCtx.eventService.defaultPublisher
+    private var maybeCurrentPosRaDec: Option[EqCoord] = None
 
     override def onMessage(msg: Event): Behavior[Event] = {
       msg match {
-        case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey && e.paramSet.isEmpty =>
-          // Check for corrupted event from C with Embedded Redis:
-          log.error(s"MCS Received empty event: $e")
-
-        case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey =>
+        case e: SystemEvent if e.eventKey == pkMountDemandPosEventKey && e.paramSet.nonEmpty =>
           // Note from doc: Mount accepts demands at 100Hz a nd enclosure accepts demands at 20Hz
           // Assuming we are receiving MountDemandPosition events at 100hz, we want to publish at 1hz.
-          count = (count + 1) % 100
-          val altAzCoordDemand = e(pkDemandPosKey).head
+          try {
+            val altAzCoordDemand  = e(pkDemandPosKey).head
+            val raDecCoordDemand  = e(pkRaDecDemandPosKey).head
+            val siderealTimeHours = e(pkSiderealTimeKey).head
 
-          maybeCurrentPos match {
-            case Some(currentPos) =>
-              val newAltAzPos = getNextPos(altAzCoordDemand, currentPos)
-              if (count == 0) {
-                // Add RA, Dec values for the demand and current positions
-                val siderealTimeHours = e(pkSiderealTimeKey).head
-                val currentPosRaDec   = altAzToRaDec(siderealTimeHours, newAltAzPos)
-                val demandPosRaDec    = altAzToRaDec(siderealTimeHours, altAzCoordDemand)
+            maybeCurrentPosRaDec match {
+              case Some(currentPos) =>
+                val newRaDecPos = getNextPos(raDecCoordDemand, currentPos)
+                val newAltAzPos = CoordUtil.raDecToAltAz(siderealTimeHours, newRaDecPos)
                 val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
                   .madd(
                     currentPosKey.set(newAltAzPos),
                     demandPosKey.set(altAzCoordDemand),
-                    currentPosRaDecKey.set(currentPosRaDec),
-                    demandPosRaDecKey.set(demandPosRaDec)
+                    currentPosRaDecKey.set(newRaDecPos),
+                    demandPosRaDecKey.set(raDecCoordDemand)
                   )
                 publisher.publish(newEvent)
-              }
-              maybeCurrentPos = Some(newAltAzPos)
-            case None =>
-              maybeCurrentPos = Some(altAzCoordDemand)
+                maybeCurrentPosRaDec = Some(newRaDecPos)
+              case None =>
+                maybeCurrentPosRaDec = Some(raDecCoordDemand)
+            }
+          }
+          catch {
+            case e: Exception =>
+              log.error(e.getMessage, ex = e)
           }
         case x =>
-          log.error(s"Expected SystemEvent but got $x")
+          if (!x.isInvalid)
+            log.error(s"Unexpected event received: $x")
       }
 
       Behaviors.same
     }
 
     // Simulate converging on the demand target
-    private def getNextPos(demandPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
-//      val altDiff = math.abs(demandPos.alt.uas - currentPos.alt.uas) * Angle.Uas2S
-//      val azDiff  = math.abs(demandPos.az.uas - currentPos.az.uas) * Angle.Uas2S
-//      log.info(s"MCS getNextPos diff alt: $altDiff arcsec, az: $azDiff arcsec")
-
-      // The max slew for az is 2.5 deg/sec.  Max for el is 1.0 deg/sec
-      val azSpeed = 2.5  // deg/sec
-      val elSpeed = 1.0  // deg/sec
-      val rate    = 100  // hz
-      val factor  = 10.0 // Speedup factor for test/demo
-      AltAzCoord(
+    private def getNextPos(demandPos: EqCoord, currentPos: EqCoord): EqCoord = {
+      val speed  = 15  // deg/sec
+      val rate   = 1   // hz
+      val factor = 1.0 // Speedup factor for test/demo
+      EqCoord(
         demandPos.tag,
-        SimulationUtil.move(elSpeed * factor, rate, demandPos.alt, currentPos.alt),
-        SimulationUtil.move(azSpeed * factor, rate, demandPos.az, currentPos.az)
+        SimulationUtil.move(speed * factor, rate, demandPos.ra, currentPos.ra),
+        SimulationUtil.move(speed * factor, rate, demandPos.dec, currentPos.dec),
+        demandPos.frame,
+        demandPos.catalogName,
+        demandPos.pm
       )
     }
   }
-
 }
 
 class McsAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext) extends ComponentHandlers(ctx, cswCtx) {
+
   import McsAssemblyHandlers._
   import cswCtx._
+
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
 
@@ -151,7 +128,7 @@ class McsAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCo
     log.info("Initializing MCS assembly...")
     val subscriber   = cswCtx.eventService.defaultSubscriber
     val eventHandler = ctx.spawn(EventHandlerActor.make(cswCtx), "McsAssemblyEventHandler")
-    subscriber.subscribeActorRef(pkEventKeys, eventHandler)
+    subscriber.subscribeActorRef(pkEventKeys, eventHandler, 1.second, RateLimiterMode)
   }
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {}

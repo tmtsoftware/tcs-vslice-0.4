@@ -19,8 +19,6 @@ object TpkC {
 
     def tpkc_init(self: Pointer): Unit
 
-    def tpkc_newDemands(self: Pointer, mAz: Double, mEl: Double, eAz: Double, eEl: Double, m3R: Double, m3T: Double): Unit
-
     def tpkc_newICRSTarget(self: Pointer, ra: Double, dec: Double): Unit
     def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Unit
     def tpkc_newAzElTarget(self: Pointer, az: Double, el: Double): Unit
@@ -50,10 +48,6 @@ object TpkC {
 class TpkC(val tpkExternC: TpkExternC, val self: Pointer, runtime: Runtime) {
   def init(): Unit = {
     tpkExternC.tpkc_init(self)
-  }
-
-  def newDemands(mAz: Double, mEl: Double, eAz: Double, eEl: Double, m3R: Double, m3T: Double): Unit = {
-    tpkExternC.tpkc_newDemands(self, mAz, mEl, eAz, eEl, m3R, m3T)
   }
 
   def newICRSTarget(ra: Double, dec: Double): Unit = {

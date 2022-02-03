@@ -91,9 +91,9 @@ object EncAssemblyHandlers {
     // Simulate converging on the (base, cap) demand
     // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     private def getNextPos(targetBase: Double, targetCap: Double, currentBase: Double, currentCap: Double): (Double, Double) = {
-      val speed  = 1.15 // deg/sec
-      val rate   = 20   // hz
-      val factor = 2.0  // Speedup factor for test/demo
+      val speed  = 10  // deg/sec
+      val rate   = 1   // hz
+      val factor = 1.0 // Speedup factor for test/demo
       (
         SimulationUtil.move(speed * factor, rate, targetBase.degree, currentBase.degree).toDegree,
         SimulationUtil.move(speed * factor, rate, targetCap.degree, currentCap.degree).toDegree

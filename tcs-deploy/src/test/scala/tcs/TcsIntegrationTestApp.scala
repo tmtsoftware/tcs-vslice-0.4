@@ -70,7 +70,6 @@ object TcsIntegrationTestApp extends App {
     val posParam = basePosKey.set(eqCoord)
     val setup    = Setup(prefix, slewToTargetCommandName, obsId).add(posParam)
     val raDecStr = s"RA=${Angle.raToString(ra.toRadian)}, Dec=${Angle.deToString(dec.toRadian)}"
-    log.info(s"SlewToTarget $raDecStr")
     val resp = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SlewToTarget $raDecStr")
@@ -85,7 +84,7 @@ object TcsIntegrationTestApp extends App {
 
   slewToTarget(10.arcHour, 30.degree, testActor)
   slewToTarget(15.arcHour, 40.degree, testActor)
-  slewToTarget(5.arcHour, 25.degree, testActor)
+  slewToTarget(12.arcHour, 65.degree, testActor)
 
 //  loggingSystem.stop
   eventSubscription.unsubscribe()
