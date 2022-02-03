@@ -101,7 +101,7 @@ object McsAssemblyHandlers {
 
     // Simulate converging on the demand target
     private def getNextPos(demandPos: EqCoord, currentPos: EqCoord): EqCoord = {
-      val speed  = 15  // deg/sec
+      val speed  = 12  // deg/sec
       val rate   = 1   // hz
       val factor = 1.0 // Speedup factor for test/demo
       EqCoord(

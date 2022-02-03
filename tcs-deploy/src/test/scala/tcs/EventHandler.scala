@@ -86,7 +86,7 @@ class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.Te
 
   private def isDemandMatched: Boolean = {
     if (isEmpty) {
-      log.info("Missing events")
+//      log.info("Missing events")
       false
     }
     else {
