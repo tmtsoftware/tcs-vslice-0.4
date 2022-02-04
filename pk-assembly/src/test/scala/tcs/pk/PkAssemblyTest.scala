@@ -9,7 +9,7 @@ import csw.params.commands.CommandResponse.Invalid
 import csw.params.commands.{CommandName, Setup}
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Angle
-import csw.params.core.models.Coords.{Coord, EqCoord, EqFrame}
+import csw.params.core.models.Coords.{Coord, EqCoord}
 import csw.params.core.models.Coords.EqFrame.FK5
 import csw.prefix.models.Prefix
 import csw.testkit.scaladsl.CSWService.{AlarmServer, EventServer}
@@ -31,7 +31,7 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    spawnStandalone(com.typesafe.config.ConfigFactory.load("pk-assembly-standalone.conf"))
+    spawnContainer(com.typesafe.config.ConfigFactory.load("PkContainer.conf"))
   }
 
   test("Assembly should be locatable using Location Service") {

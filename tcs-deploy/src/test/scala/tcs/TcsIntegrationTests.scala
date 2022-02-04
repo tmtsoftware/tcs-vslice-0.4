@@ -33,6 +33,7 @@ import scala.concurrent.duration._
 // Tests the TCS assembly together with the MCS and ENC assemblies
 class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventServer) with AnyFunSuiteLike {
   import frameworkTestKit._
+
   private val pkConnection  = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
   private val mcsConnection = AkkaConnection(ComponentId(Prefix("TCS.MCSAssembly"), ComponentType.Assembly))
   private val encConnection = AkkaConnection(ComponentId(Prefix("TCS.ENCAssembly"), ComponentType.Assembly))
@@ -76,6 +77,7 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+
     container = spawnContainer(com.typesafe.config.ConfigFactory.load("McsEncPkContainer.conf"))
     val containerLifecycleStateProbe: TestProbe[ContainerLifecycleState] = TestProbe[ContainerLifecycleState]()
     assertThatContainerIsRunning(container, containerLifecycleStateProbe, timeout.duration)
@@ -144,7 +146,10 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
 
   test("SlewToTarget command to pk assembly should cause MCS and ENC events to show eventual move to target") {
     import Angle._
-    implicit val sched: Scheduler = actorSystem.scheduler
+
+    if (Option(System.getenv("TPK_USE_FAKE_SYSTEM_CLOCK")).isEmpty) {
+      fail("Please set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK to 1 before running the TcsIntegrationTests")
+    }
 
     val subscriber        = eventService.defaultSubscriber
     val testActor         = actorSystem.spawn(EventHandler.TestActor.make(), "TestActor")

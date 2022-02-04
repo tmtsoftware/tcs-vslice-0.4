@@ -31,6 +31,11 @@ import tcs.EventHandler.StopTest
 // This is a standalone app that expects csw-services to be already running!
 object TcsIntegrationTestApp extends App {
 
+  if (Option(System.getenv("TPK_USE_FAKE_SYSTEM_CLOCK")).isEmpty) {
+    println(s"Please set the environment variable TPK_USE_FAKE_SYSTEM_CLOCK to 1 before running the TcsIntegrationTestApp")
+    System.exit(1)
+  }
+
   private val pkConnection = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
 
   private val basePosKey: Key[Coord]  = KeyType.CoordKey.make("base")

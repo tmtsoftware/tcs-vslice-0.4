@@ -4,10 +4,13 @@ import csw.params.core.models.{Angle, Coords}
 import csw.params.core.models.Coords.AltAzCoord
 import org.scalatest.funsuite.AnyFunSuite
 import Angle._
+import org.scalatest.Ignore
 
+// TODO
+@Ignore
 class SimulationUtilTest extends AnyFunSuite {
 
-  val closeEnoughUas = 0.001 * Angle.S2Uas
+  val closeEnoughUas: Double = 0.001 * Angle.S2Uas
 
   // Simulate converging on the target
   private def getNextPos(targetPos: AltAzCoord, currentPos: AltAzCoord): AltAzCoord = {
@@ -30,7 +33,7 @@ class SimulationUtilTest extends AnyFunSuite {
     do {
       currentPos = getNextPos(demand, currentPos)
       val dist = Angle.distance(currentPos.alt.toRadian, currentPos.az.toRadian, demand.alt.toRadian, demand.az.toRadian)
-//      println(s"XXX dist = ${dist * Angle.R2S} arcsec")
+      println(s"XXX dist = ${dist * Angle.R2S} arcsec")
     } while (math.abs(currentPos.alt.uas - demand.alt.uas) > closeEnoughUas || math.abs(currentPos.az.uas - demand.az.uas) > closeEnoughUas)
   }
 }

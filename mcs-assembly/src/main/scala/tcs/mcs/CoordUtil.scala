@@ -21,7 +21,7 @@ object CoordUtil {
     val raH  = pos.ra.toDegree / 15.0
     val decD = pos.dec.toDegree
     val s1   = st - raH
-    val s   = (if (s1 < 0) s1 + 24 else s1) * Angle.H2R
+    val s    = (if (s1 < 0) s1 + 24 else s1) * Angle.H2R
     val dec  = decD * Angle.D2R
     val lat  = latDeg * Angle.D2R
     val j    = sin(dec) * sin(lat) + cos(dec) * cos(lat) * cos(s)
@@ -29,7 +29,7 @@ object CoordUtil {
     val j2   = (sin(dec) - sin(lat) * sin(al)) / (cos(lat) * cos(al))
     val az   = acos(j2)
     val j3   = sin(s)
-    val az2  = if (j3 > 0) Pi*2 - az else az
+    val az2  = if (j3 > 0) Pi * 2 - az else az
     AltAzCoord(pos.tag, al.radian, az2.radian)
   }
 
