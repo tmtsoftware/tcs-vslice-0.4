@@ -24,8 +24,8 @@ object Common extends AutoPlugin {
       "-Xlint",
       "-Ywarn-dead-code"
     ),
-    javacOptions in (Compile, doc) ++= Seq("-Xdoclint:none"),
-    testOptions in Test ++= Seq(
+    Compile / doc / javacOptions ++= Seq("-Xdoclint:none"),
+    Test / testOptions ++= Seq(
       // show full stack traces and test case durations
       Tests.Argument("-oDF"),
       // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
@@ -33,9 +33,9 @@ object Common extends AutoPlugin {
       Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
     ),
     resolvers += "jitpack" at "https://jitpack.io",
-    version := "0.7.0",
+    version := "0.8.0",
     fork := true,
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
     autoCompilerPlugins := true,
     if (formatOnCompile) scalafmtOnCompile := true else scalafmtOnCompile := false
   )

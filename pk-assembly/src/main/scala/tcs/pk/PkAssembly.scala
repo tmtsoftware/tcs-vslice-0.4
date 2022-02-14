@@ -158,23 +158,31 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   // Set the target position
   private def slewToTarget(runId: Id, targetPos: Coord): SubmitResponse = {
+    val errMsg = s"Target position is too close to the horizon for observing: $targetPos"
     targetPos match {
       case EqCoord(_, ra, dec, frame, _, _) =>
-        log.info(s"SlewToTarget ${Angle.raToString(ra.toRadian)}, ${Angle.deToString(dec.toRadian)} ($frame)")
+        log.info(s"SlewToTarget ${Angle.raToString(ra.toRadian)}, ${Angle.deToString(dec.toRadian)} ($frame) ($targetPos)")
         frame match {
           case ICRS =>
             setOffset(0.0, 0.0, "ICRS")
-            tpkc.newICRSTarget(ra.toDegree, dec.toDegree)
+            if (tpkc.newICRSTarget(ra.toDegree, dec.toDegree))
+              CommandResponse.Completed(runId)
+            else
+              CommandResponse.Error(runId, errMsg)
           case FK5 =>
             setOffset(0.0, 0.0, "FK5")
-            tpkc.newFK5Target(ra.toDegree, dec.toDegree)
+            if (tpkc.newFK5Target(ra.toDegree, dec.toDegree))
+              CommandResponse.Completed(runId)
+            else
+              CommandResponse.Error(runId, errMsg)
         }
-        CommandResponse.Completed(runId)
       case AltAzCoord(_, alt, az) =>
         setOffset(0.0, 0.0, "AzEl")
         log.info(s"SlewToTarget ${Angle.deToString(alt.toRadian)}, ${Angle.raToString(az.toRadian)} (Alt/Az)")
-        tpkc.newAzElTarget(az.toDegree, alt.toDegree)
-        CommandResponse.Completed(runId)
+        if (tpkc.newAzElTarget(az.toDegree, alt.toDegree))
+          CommandResponse.Completed(runId)
+        else
+          CommandResponse.Error(runId, errMsg)
       case x =>
         CommandResponse.Error(runId, s"Unsupported coordinate type: $x")
     }
@@ -193,7 +201,14 @@ class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCon
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}
 
-  override def onShutdown(): Unit = {}
+  override def onShutdown(): Unit = {
+    try {
+      tpkc.shutdown()
+    }
+    catch {
+      case e: Exception => log.error(s"Call to TpkC::shutdown() failed.")
+    }
+  }
 
   override def onGoOffline(): Unit = {}
 

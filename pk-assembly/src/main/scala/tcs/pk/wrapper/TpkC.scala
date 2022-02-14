@@ -18,10 +18,11 @@ object TpkC {
     def tpkc_ctor(): Pointer
 
     def tpkc_init(self: Pointer): Unit
+    def tpkc_shutdown(self: Pointer): Unit
 
-    def tpkc_newICRSTarget(self: Pointer, ra: Double, dec: Double): Unit
-    def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Unit
-    def tpkc_newAzElTarget(self: Pointer, az: Double, el: Double): Unit
+    def tpkc_newICRSTarget(self: Pointer, ra: Double, dec: Double): Boolean
+    def tpkc_newFK5Target(self: Pointer, ra: Double, dec: Double): Boolean
+    def tpkc_newAzElTarget(self: Pointer, az: Double, el: Double): Boolean
 
     def tpkc_setICRSOffset(self: Pointer, raO: Double, decO: Double): Unit
     def tpkc_setFK5Offset(self: Pointer, raO: Double, decO: Double): Unit
@@ -49,14 +50,17 @@ class TpkC(val tpkExternC: TpkExternC, val self: Pointer, runtime: Runtime) {
   def init(): Unit = {
     tpkExternC.tpkc_init(self)
   }
+  def shutdown(): Unit = {
+    tpkExternC.tpkc_shutdown(self)
+  }
 
-  def newICRSTarget(ra: Double, dec: Double): Unit = {
+  def newICRSTarget(ra: Double, dec: Double): Boolean = {
     tpkExternC.tpkc_newICRSTarget(self, ra, dec)
   }
-  def newFK5Target(ra: Double, dec: Double): Unit = {
+  def newFK5Target(ra: Double, dec: Double): Boolean = {
     tpkExternC.tpkc_newFK5Target(self, ra, dec)
   }
-  def newAzElTarget(az: Double, el: Double): Unit = {
+  def newAzElTarget(az: Double, el: Double): Boolean = {
     tpkExternC.tpkc_newAzElTarget(self, az, el)
   }
 

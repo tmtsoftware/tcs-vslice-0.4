@@ -90,13 +90,13 @@ To run the assemblies, run:
 To send a command to the pk assembly, you can use the tcs-client command line application:
 
 ```
-tcs-client 0.0.1
+tcs-client 0.8.0
 Usage: tcs-client [options]
 
   -c, --command <command>  The command to send to the pk assembly (One of: SlewToTarget, SetOffset. Default: SlewToTarget)
   -r, --ra <RA>            The RA coordinate for the command in the format hh:mm:ss.sss
   -d, --dec <Dec>          The Dec coordinate for the command in the format dd:mm:ss.sss
-  -f, --frame <frame>      The frame of refererence for RA, Dec: (default: None)
+  -f, --frame <frame>      The frame of refererence for RA, Dec: (default: FK5)
   --pmx <pmx>              The primary motion x value: (default: 0.0)
   --pmy <pmy>              The primary motion y value: (default: 0.0)
   -x, --x <x>              The x offset in arcsec: (default: 0.0)
@@ -107,6 +107,7 @@ Usage: tcs-client [options]
                            Limit the receiving rate for subscribed events (in ms): Default: no limit
   -e, --events prefix.name,...
                            List of events (prefix.name) to subscribe to (default: TCS.MCSAssembly.MountPosition, TCS.PointingKernelAssembly.EnclosureDemandPosition, TCS.PointingKernelAssembly.MountDemandPosition, TCS.PointingKernelAssembly.M3DemandPosition, TCS.ENCAssembly.CurrentPosition)
+  --convertRaDec <value>   Interprets --ra and --dec as microarcseconds (uas) and prints them as hh:mm:ss, dd:mm:ss
   --help
   --version
 ```

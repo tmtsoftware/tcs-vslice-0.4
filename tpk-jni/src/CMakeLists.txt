@@ -1,6 +1,7 @@
 include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 11)
 enable_language(CXX)
+set(CMAKE_BUILD_TYPE Debug)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

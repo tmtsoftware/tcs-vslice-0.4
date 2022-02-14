@@ -16,7 +16,8 @@ case class Options(
     obsId: Option[ObsId] = None,
     subscribeToEvents: Boolean = false,
     events: Seq[String] = Nil,
-    rateLimiter: Option[Int] = None
+    rateLimiter: Option[Int] = None,
+    convertRaDec: Boolean = false
 )
 
 object Options {
@@ -81,6 +82,10 @@ object Options {
     opt[Seq[String]]('e', "events") valueName "prefix.name,..." action { (x, c) =>
       c.copy(events = x)
     } text s"List of events (prefix.name) to subscribe to (default: ${defaultEventKeys.mkString(", ")})"
+
+    opt[Boolean]("convertRaDec") action { (_, c) =>
+      c.copy(convertRaDec = true)
+    } text "Interprets --ra and --dec as microarcseconds (uas) and prints them as hh:mm:ss, dd:mm:ss"
 
     help("help")
     version("version")

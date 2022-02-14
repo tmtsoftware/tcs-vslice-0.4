@@ -105,10 +105,6 @@ private:
         tpkC->azElToRaDec(tAz, tEl, &p);
         double raDeg = p.a;
         double decDeg = p.b;
-//        auto refSys = tpk::ICRefSys();
-//        auto pos = refSys.fromAzEl(time.tai(), site, tpk::spherical(deg2Rad(tAz), deg2Rad(tEl)));
-//        double raDeg = rad2Deg(pos.a);
-//        double decDeg = rad2Deg(pos.b);
 
         tpkC->newDemands(tAz, tEl, eAz, eEl, m3R, m3T, raDeg, decDeg);
     }
@@ -148,9 +144,9 @@ static const double PI2 = M_PI * 2;
 // ???  =ROUND(DEGREES(ACOS(TAN(RADIANS(A2-57.5+1)) / TAN(RADIANS(32.5)))),1)
 
 // Calculates the base and cap values
-void TpkC::calculateBaseAndCap(double ecsAzDeg, double ecsElDeg, double &baseDeg, double &capDeg) {
-    double azRad = deg2Rad(ecsAzDeg);
-    double elRad = deg2Rad(ecsElDeg);
+void TpkC::calculateBaseAndCap(double azDeg, double elDeg, double &baseDeg, double &capDeg) {
+    double azRad = deg2Rad(azDeg);
+    double elRad = deg2Rad(elDeg);
 
     if ((elRad > PI2) || (elRad < 0)) {
         elRad = 0;
@@ -168,32 +164,33 @@ void TpkC::calculateBaseAndCap(double ecsAzDeg, double ecsElDeg, double &baseDeg
     capDeg = rad2Deg(capRad);
 }
 
+// Returns true if the base and cap values for the given az,el pos in deg can be calculated
+bool TpkC::isTargetVisible(double azDeg, double elDeg) {
+    double baseDeg, capDeg;
+    calculateBaseAndCap(azDeg, elDeg, baseDeg, capDeg);
+    return !std::isnan(baseDeg) && !std::isnan(capDeg);
+}
+
 // Called when there are new demands: All args are in deg
 void TpkC::newDemands(double mcsAzDeg, double mcsElDeg, double ecsAzDeg, double ecsElDeg, double m3RotationDeg,
                       double m3TiltDeg, double raDeg, double decDeg) {
-    double baseDeg, capDeg;
-    calculateBaseAndCap(ecsAzDeg, ecsElDeg, baseDeg, capDeg);
-
-    // Below condition will help in preventing TPK Default Demands
-    // from getting published and Demand Publishing will start only
-    // once New target or Offset Command is being received
+    // Demand publishing will start only once a new target or offset command has been being received.
     // Note from doc: Mount accepts demands at 100Hz and enclosure accepts demands at 20Hz
     if (publishDemands) {
+        // at 100Hz
         publishMcsDemand(mcsAzDeg, mcsElDeg, raDeg, decDeg);
-        if (std::isnan(baseDeg) || std::isnan(capDeg)) {
-            printf("XXX base cap out of range\n");
-        } else if (++publishCounter % 5 == 0) {
+        if (++publishCounter % 5 == 0) {
+            // at 20Hz
             publishCounter = 0;
-            publishEcsDemand(baseDeg, capDeg);
+            double baseDeg, capDeg;
+            calculateBaseAndCap(ecsAzDeg, ecsElDeg, baseDeg, capDeg);
+            if (!std::isnan(baseDeg) && !std::isnan(capDeg)) {
+                publishEcsDemand(baseDeg, capDeg);
+            }
         }
         publishM3Demand(m3RotationDeg, m3TiltDeg);
     }
 }
-
-
-//else {
-//printf("XXX base cap out of range\n");
-//}
 
 // Publish a TCS.PointingKernelAssembly.MountDemandPosition event to the CSW event service.
 // All args are in degrees.
@@ -326,10 +323,12 @@ void TpkC::init() {
     // making tests more reproducible.
     FakeSystemClock fake_clock(37.0);
     tpk::Clock *clock;
-    if (getenv("TPK_USE_FAKE_SYSTEM_CLOCK"))
+    if (getenv("TPK_USE_FAKE_SYSTEM_CLOCK")) {
+        printf("Warning: Using fake system clock starting at Jan 1, 2022 (MJD = 59580.5)\n");
         clock = &fake_clock;
-    else
+    } else {
         clock = &unix_clock;
+    }
 
     // and a Site...
     site = new tpk::Site(clock->read(),
@@ -347,6 +346,9 @@ void TpkC::init() {
 
     // and a "time keeper"...
     time = new tpk::TimeKeeper(*clock, *site);
+
+    double st = rad2Hour(site->st(time->tai()));
+    printf("Using Sidereal Time = %g\n", st);
 
     // Create a transformation that converts mm to radians for a 450000.0mm	 focal length.
     tpk::AffineTransform transf(0.0, 0.0, 1.0 / 450000.0, 0.0);
@@ -392,28 +394,55 @@ void TpkC::init() {
 #pragma clang diagnostic pop
 }
 
-// a and b are expected in degrees
-void TpkC::newICRSTarget(double ra, double dec) {
+void TpkC::shutdown() {
+    publishDemands = false;
+    cswEventPublisherClose(publisher);
+    // TODO: Stop event loops?
+}
+
+// Sets a new ICRS target with RA, Dec in deg and returns true if the target is above the horizon
+bool TpkC::newICRSTarget(double ra, double dec) {
+    // check if target is visible
+    CoordPair azEl;
+    raDecToAzEl(ra, dec, &azEl);
+    if (!isTargetVisible(azEl.a, azEl.b)) {
+        return false;
+    }
+
     publishDemands = true;
     tpk::ICRSTarget target(*site, deg2Rad(ra), deg2Rad(dec));
     mount->newTarget(target);
     enclosure->newTarget(target);
+    return true;
 }
 
-// a and b are expected in degrees
-void TpkC::newFK5Target(double ra, double dec) {
+// Sets a new ICRS target with RA, Dec in deg and returns true if the target is above the horizon
+bool TpkC::newFK5Target(double ra, double dec) {
+    // check if target is visible
+    CoordPair azEl;
+    raDecToAzEl(ra, dec, &azEl);
+    if (!isTargetVisible(azEl.a, azEl.b)) {
+        return false;
+    }
+
     publishDemands = true;
     tpk::FK5Target target(*site, deg2Rad(ra), deg2Rad(dec));
     mount->newTarget(target);
     enclosure->newTarget(target);
+    return true;
 }
 
-// az and el are expected in degrees
-void TpkC::newAzElTarget(double az, double el) {
+// Sets a new AzEl target with az, el in deg and returns true if the target is above the horizon
+bool TpkC::newAzElTarget(double az, double el) {
+    if (!isTargetVisible(az, el)) {
+        return false;
+    }
+
     publishDemands = true;
     tpk::AzElTarget target(*site, deg2Rad(az), deg2Rad(el));
     mount->newTarget(target);
     enclosure->newTarget(target);
+    return true;
 }
 
 // Set the offset. raO and decO are expected in arcsec
@@ -457,6 +486,15 @@ void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
     raDec->b = rad2Deg(pos.b);
 }
 
+// Convert the given ra,dec coordinates (in deg) to az,el (in deg)
+void TpkC::raDecToAzEl(double ra, double dec, CoordPair *azEl) {
+    auto refSys = tpk::AzElRefSys();
+    auto pos = refSys.fromFK5(time->tai(), *site, tpk::spherical(deg2Rad(ra), deg2Rad(dec)), 2000.0);
+    azEl->a = rad2Deg(pos.a);
+    azEl->b = rad2Deg(pos.b);
+}
+
+
 // --- This provides access from C, to make it easier to access from Java ---
 
 extern "C" {
@@ -469,16 +507,20 @@ void tpkc_init(TpkC *self) {
     self->init();
 }
 
-void tpkc_newICRSTarget(TpkC *self, double ra, double dec) {
-    self->newICRSTarget(ra, dec);
+void tpkc_shutdown(TpkC *self) {
+    self->shutdown();
 }
 
-void tpkc_newFK5Target(TpkC *self, double ra, double dec) {
-    self->newFK5Target(ra, dec);
+bool tpkc_newICRSTarget(TpkC *self, double ra, double dec) {
+    return self->newICRSTarget(ra, dec);
 }
 
-void tpkc_newAzElTarget(TpkC *self, double az, double el) {
-    self->newAzElTarget(az, el);
+bool tpkc_newFK5Target(TpkC *self, double ra, double dec) {
+    return self->newFK5Target(ra, dec);
+}
+
+bool tpkc_newAzElTarget(TpkC *self, double az, double el) {
+    return self->newAzElTarget(az, el);
 }
 
 void tpkc_setICRSOffset(TpkC *self, double raO, double decO) {
@@ -503,5 +545,4 @@ void tpkc_setAzElOffset(TpkC *self, double raO, double decO) {
 
 }
 
-// ---
 
