@@ -24,5 +24,8 @@ class McsAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer
     val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
 
     akkaLocation.connection shouldBe connection
+
+    // Give it time to close down to avoid error messages
+    Thread.sleep(1000)
   }
 }

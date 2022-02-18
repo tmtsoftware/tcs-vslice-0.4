@@ -16,7 +16,6 @@ class EncAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // uncomment if you want one Assembly run for all tests
     spawnStandalone(com.typesafe.config.ConfigFactory.load("enc-assembly-standalone.conf"))
   }
 
@@ -25,5 +24,8 @@ class EncAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer
     val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
 
     akkaLocation.connection shouldBe connection
+
+    // Give it time to close down to avoid error messages
+    Thread.sleep(1000)
   }
 }

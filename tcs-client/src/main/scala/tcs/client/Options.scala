@@ -93,7 +93,7 @@ object Options {
 
   private def supportedCommands = Set("SlewToTarget", "SetOffset")
 
-  //noinspection SameParameterValue
+  // noinspection SameParameterValue
   private def error(msg: String): Unit = {
     println(msg)
     System.exit(1)

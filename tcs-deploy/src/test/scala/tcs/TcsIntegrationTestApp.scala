@@ -50,9 +50,9 @@ object TcsIntegrationTestApp extends App {
   implicit val actorSystem: ActorSystem[SpawnProtocol.Command] = ActorSystemFactory.remote(SpawnProtocol(), "TcsIntegrationTestApp")
   implicit val sched: Scheduler                                = actorSystem.scheduler
   implicit val timeout: Timeout                                = Timeout(3.minutes)
-  val loggingSystem                                            = LoggingSystemFactory.start("TcsIntegrationTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
-  implicit lazy val log: Logger                                = new LoggerFactory(prefix).getLogger
-  val locationService                                          = HttpLocationServiceFactory.makeLocalClient(actorSystem)
+  val loggingSystem = LoggingSystemFactory.start("TcsIntegrationTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
+  implicit lazy val log: Logger = new LoggerFactory(prefix).getLogger
+  val locationService           = HttpLocationServiceFactory.makeLocalClient(actorSystem)
   lazy val eventService: EventService = {
     new EventServiceFactory().make(locationService)(actorSystem)
   }

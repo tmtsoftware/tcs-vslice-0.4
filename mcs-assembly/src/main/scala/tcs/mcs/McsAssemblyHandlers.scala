@@ -19,7 +19,7 @@ import csw.time.core.models.UTCTime
 import tcs.shared.SimulationUtil
 
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{Await, ExecutionContextExecutor}
 
 /**
  * Domain specific logic should be written in below handlers.
@@ -124,12 +124,12 @@ class McsAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCo
   implicit val ec: ExecutionContextExecutor = ctx.executionContext
   private val log                           = loggerFactory.getLogger
 
-  override def initialize(): Unit = {
-    log.info("Initializing MCS assembly...")
-    val subscriber   = cswCtx.eventService.defaultSubscriber
-    val eventHandler = ctx.spawn(EventHandlerActor.make(cswCtx), "McsAssemblyEventHandler")
-    subscriber.subscribeActorRef(pkEventKeys, eventHandler, 1.second, RateLimiterMode)
-  }
+  log.info("Initializing MCS assembly...")
+  private val subscriber        = cswCtx.eventService.defaultSubscriber
+  private val eventHandler      = ctx.spawn(EventHandlerActor.make(cswCtx), "McsAssemblyEventHandler")
+  private val eventSubscription = subscriber.subscribeActorRef(pkEventKeys, eventHandler, 1.second, RateLimiterMode)
+
+  override def initialize(): Unit = {}
 
   override def onLocationTrackingEvent(trackingEvent: TrackingEvent): Unit = {}
 
@@ -139,7 +139,10 @@ class McsAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswCo
 
   override def onOneway(runId: Id, controlCommand: ControlCommand): Unit = {}
 
-  override def onShutdown(): Unit = {}
+  override def onShutdown(): Unit = {
+    Await.ready(eventSubscription.unsubscribe(), 1.second)
+    ctx.stop(eventHandler)
+  }
 
   override def onGoOffline(): Unit = {}
 
