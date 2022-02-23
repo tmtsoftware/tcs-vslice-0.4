@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 * Updated for latest CSW snapshot (changes in csw framework standalone configs) 
-* Added sidereal time and hour angle to MCSAssembly's MountPosition event
+* Added siderealTime (double, hours), demandHourAngle and currentHourAngle (double, degrees) to MCSAssembly's MountPosition event
 
 ## [tcs-vslice v0.8] - 2022-02-14
 
