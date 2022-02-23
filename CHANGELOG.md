@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.9] - 2022-02-23
+
+### Changed
+
+* Updated for latest CSW snapshot (changes in csw framework standalone configs) 
+* Added sidereal time and hour angle to MCSAssembly's MountPosition event
+
 ## [tcs-vslice v0.8] - 2022-02-14
 
 ### Changed
