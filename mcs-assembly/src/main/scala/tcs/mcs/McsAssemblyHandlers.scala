@@ -11,7 +11,7 @@ import csw.params.commands.CommandResponse._
 import csw.params.commands.ControlCommand
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.{AltAzCoord, EqCoord}
-import csw.params.core.models.Id
+import csw.params.core.models.{Id, Units}
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
@@ -35,7 +35,7 @@ object McsAssemblyHandlers {
   private val pkMountDemandPosEventKey = EventKey(pkAssemblyPrefix, EventName("MountDemandPosition"))
   private val pkDemandPosKey           = KeyType.AltAzCoordKey.make("pos")
   private val pkRaDecDemandPosKey      = KeyType.EqCoordKey.make("posRaDec")
-  private val pkSiderealTimeKey        = KeyType.DoubleKey.make("siderealTime")
+  private val pkSiderealTimeKey        = KeyType.DoubleKey.make("siderealTime", Units.hour)
   private val pkEventKeys              = Set(pkMountDemandPosEventKey)
 
   // Actor to receive Assembly events
@@ -44,7 +44,7 @@ object McsAssemblyHandlers {
     private val demandPosKey: Key[AltAzCoord]    = KeyType.AltAzCoordKey.make("demand")
     private val currentPosRaDecKey: Key[EqCoord] = KeyType.EqCoordKey.make("currentPos")
     private val demandPosRaDecKey: Key[EqCoord]  = KeyType.EqCoordKey.make("demandPos")
-    private val hourAngleKey                     = KeyType.DoubleKey.make("hourAngle")
+    private val hourAngleKey                     = KeyType.DoubleKey.make("hourAngle", Units.degree)
     private val mcsTelPosEventName               = EventName("MountPosition")
 
     def make(cswCtx: CswContext): Behavior[Event] = {
