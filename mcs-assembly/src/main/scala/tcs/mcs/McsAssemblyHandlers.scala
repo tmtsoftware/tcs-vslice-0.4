@@ -11,7 +11,7 @@ import csw.params.commands.CommandResponse._
 import csw.params.commands.ControlCommand
 import csw.params.core.generics.{Key, KeyType}
 import csw.params.core.models.Coords.{AltAzCoord, EqCoord}
-import csw.params.core.models.{Angle, Id}
+import csw.params.core.models.Id
 import csw.params.events.{Event, EventKey, EventName, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
