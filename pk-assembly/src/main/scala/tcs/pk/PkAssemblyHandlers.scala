@@ -3,7 +3,7 @@ package tcs.pk
 import akka.actor.typed.scaladsl.ActorContext
 import csw.command.client.messages.TopLevelActorMessage
 import csw.framework.models.CswContext
-import csw.framework.scaladsl.{ComponentBehaviorFactory, ComponentHandlers}
+import csw.framework.scaladsl.ComponentHandlers
 import csw.location.api.models.TrackingEvent
 import csw.params.commands.CommandIssue.{
   MissingKeyIssue,
@@ -24,11 +24,6 @@ import csw.params.core.models.Coords.EqFrame.{FK5, ICRS}
 import tcs.pk.wrapper.TpkC
 
 // --- Demo implementation of parts of the TCS pk assembly ---
-
-class PkAssemblyBehaviorFactory extends ComponentBehaviorFactory {
-  override def handlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext): ComponentHandlers =
-    new PkAssemblyHandlers(ctx, cswCtx)
-}
 
 class PkAssemblyHandlers(ctx: ActorContext[TopLevelActorMessage], cswCtx: CswContext) extends ComponentHandlers(ctx, cswCtx) {
 
