@@ -111,7 +111,7 @@ class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.Te
   }
 
   override def onMessage(msg: Event): Behavior[Event] = {
-    log.info(s"XXX XXX Test EventHandler: received event: $msg")
+//    log.info(s"XXX XXX Test EventHandler: received event: $msg")
     msg match {
       case e: SystemEvent if e.eventName == mcsTelPosEventName && e.paramSet.nonEmpty =>
         maybeDemandPos = Some(e(demandPosKey).head)
