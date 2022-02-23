@@ -44,7 +44,8 @@ object McsAssemblyHandlers {
     private val demandPosKey: Key[AltAzCoord]    = KeyType.AltAzCoordKey.make("demand")
     private val currentPosRaDecKey: Key[EqCoord] = KeyType.EqCoordKey.make("currentPos")
     private val demandPosRaDecKey: Key[EqCoord]  = KeyType.EqCoordKey.make("demandPos")
-    private val hourAngleKey                     = KeyType.DoubleKey.make("hourAngle", Units.degree)
+    private val currentHourAngleKey              = KeyType.DoubleKey.make("currentHourAngle", Units.degree)
+    private val demandHourAngleKey               = KeyType.DoubleKey.make("demandHourAngle", Units.degree)
     private val mcsTelPosEventName               = EventName("MountPosition")
 
     def make(cswCtx: CswContext): Behavior[Event] = {
@@ -82,7 +83,8 @@ object McsAssemblyHandlers {
                     currentPosRaDecKey.set(newRaDecPos),
                     demandPosRaDecKey.set(raDecCoordDemand),
                     pkSiderealTimeKey.set(siderealTimeHours),
-                    hourAngleKey.set(siderealTimeHours * 15 - newRaDecPos.ra.toDegree)
+                    currentHourAngleKey.set(siderealTimeHours * 15 - newRaDecPos.ra.toDegree),
+                    demandHourAngleKey.set(siderealTimeHours * 15 - raDecCoordDemand.ra.toDegree)
                   )
                 publisher.publish(newEvent)
                 maybeCurrentPosRaDec = Some(newRaDecPos)
