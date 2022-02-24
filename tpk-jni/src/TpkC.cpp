@@ -90,7 +90,6 @@ private:
         enclosure.track(1);
 
         // Get the mount az, el and M3 demands in degrees.
-
         double tAz = 180.0 - rad2Deg(mount.roll());
         double tEl = rad2Deg(mount.pitch());
 
@@ -101,10 +100,14 @@ private:
         double m3R = rad2Deg(mount.m3Azimuth());
         double m3T = 90.0 - rad2Deg(mount.m3Elevation());
 
-        CoordPair p;
-        tpkC->azElToRaDec(tAz, tEl, &p);
-        double raDeg = p.a;
-        double decDeg = p.b;
+//        CoordPair p;
+//        tpkC->azElToRaDec(tAz, tEl, &p);
+//        double raDeg = p.a;
+//        double decDeg = p.b;
+
+        tpk::spherical telpos = mount.position();
+        double raDeg = rad2Deg(telpos.a);
+        double decDeg = rad2Deg(telpos.b);
 
         tpkC->newDemands(tAz, tEl, eAz, eEl, m3R, m3T, raDeg, decDeg);
     }
@@ -480,7 +483,7 @@ void TpkC::currentPosition(CoordPair *raDec) {
 
 // Convert the given az,el coordinates (in deg) to ra,dec (in deg)
 void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
-    auto refSys = tpk::FK5RefSys();
+    auto refSys = tpk::ICRefSys();
     auto pos = refSys.fromAzEl(time->tai(), *site, tpk::spherical(deg2Rad(az), deg2Rad(el)));
     raDec->a = rad2Deg(pos.a);
     raDec->b = rad2Deg(pos.b);
@@ -489,7 +492,7 @@ void TpkC::azElToRaDec(double az, double el, CoordPair *raDec) {
 // Convert the given ra,dec coordinates (in deg) to az,el (in deg)
 void TpkC::raDecToAzEl(double ra, double dec, CoordPair *azEl) {
     auto refSys = tpk::AzElRefSys();
-    auto pos = refSys.fromFK5(time->tai(), *site, tpk::spherical(deg2Rad(ra), deg2Rad(dec)), 2000.0);
+    auto pos = refSys.fromICRS(time->tai(), *site, tpk::spherical(deg2Rad(ra), deg2Rad(dec)));
     azEl->a = rad2Deg(pos.a);
     azEl->b = rad2Deg(pos.b);
 }

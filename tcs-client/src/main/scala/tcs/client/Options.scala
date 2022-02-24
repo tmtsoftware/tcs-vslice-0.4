@@ -49,7 +49,7 @@ object Options {
 
     opt[String]('f', "frame") valueName "<frame>" action { (x, c) =>
       c.copy(frame = Some(x))
-    } text s"The frame of refererence for RA, Dec: (default: FK5)"
+    } text s"The frame of refererence for RA, Dec: (default: ICRS)"
 
     opt[Double]("pmx") valueName "<pmx>" action { (x, c) =>
       c.copy(pmx = x)

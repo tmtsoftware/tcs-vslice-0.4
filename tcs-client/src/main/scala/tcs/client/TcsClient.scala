@@ -18,7 +18,7 @@ import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
 import csw.params.commands.CommandResponse.isNegative
 import csw.params.commands.Setup
 import csw.params.core.generics.{Key, KeyType}
-import csw.params.core.models.Coords.EqFrame.FK5
+import csw.params.core.models.Coords.EqFrame.ICRS
 import csw.params.core.models.Coords.{Coord, EqCoord, EqFrame}
 import csw.params.core.models.ProperMotion
 import csw.params.events.{Event, EventKey, SystemEvent}
@@ -84,7 +84,7 @@ object TcsClient extends App {
               val eqCoord = EqCoord(
                 ra = options.ra.get,
                 dec = options.dec.get,
-                frame = options.frame.map(EqFrame.withName).getOrElse(FK5),
+                frame = options.frame.map(EqFrame.withName).getOrElse(ICRS),
                 pmx = pm.pmx,
                 pmy = pm.pmy
               )

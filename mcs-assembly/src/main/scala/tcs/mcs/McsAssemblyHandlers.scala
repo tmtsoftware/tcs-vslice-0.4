@@ -75,6 +75,7 @@ object McsAssemblyHandlers {
             maybeCurrentPosRaDec match {
               case Some(currentPos) =>
                 val newRaDecPos = getNextPos(raDecCoordDemand, currentPos)
+//                log.info(s"XXX RA, Dec demand = $raDecCoordDemand, current = $newRaDecPos")
                 val newAltAzPos = CoordUtil.raDecToAltAz(siderealTimeHours, newRaDecPos)
                 val newEvent = SystemEvent(cswCtx.componentInfo.prefix, mcsTelPosEventName)
                   .madd(
