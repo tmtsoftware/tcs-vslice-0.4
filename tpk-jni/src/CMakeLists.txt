@@ -8,10 +8,11 @@ find_package(Threads REQUIRED)
 
 set(INCLUDE_DIR /usr/local/include)
 
-include_directories(. ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
+include_directories(. "/opt/homebrew/include" ${INCLUDE_DIR} ${INCLUDE_DIR}/tpk ${INCLUDE_DIR}/slalib ${INCLUDE_DIR}/tcspk ${INCLUDE_DIR}/csw)
+
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS} .)
-link_directories("/usr/local/lib")
+link_directories("/opt/homebrew/lib" "/usr/local/lib")
 
 add_library(${PROJECT_NAME} SHARED
         FakeSystemClock.cpp
