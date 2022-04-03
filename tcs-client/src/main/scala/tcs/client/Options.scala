@@ -83,7 +83,7 @@ object Options {
       c.copy(events = x)
     } text s"List of events (prefix.name) to subscribe to (default: ${defaultEventKeys.mkString(", ")})"
 
-    opt[Boolean]("convertRaDec") action { (_, c) =>
+    opt[Unit]("convertRaDec") action { (_, c) =>
       c.copy(convertRaDec = true)
     } text "Interprets --ra and --dec as microarcseconds (uas) and prints them as hh:mm:ss, dd:mm:ss"
 
