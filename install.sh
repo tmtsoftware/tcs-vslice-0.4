@@ -16,7 +16,8 @@ case "${os}" in
     Linux*)
       LIB_SUFFIX=so
       LOCAL_LIBS="$LOCAL_LIBS zlog"
-      SYS_LIB_DIR=/lib/x86_64-linux-gnu;;
+      #SYS_LIB_DIR=/lib/x86_64-linux-gnu;;
+      SYS_LIB_DIR=/usr/lib64;;
     Darwin*)
       LIB_SUFFIX=dylib
       SYS_LIBS="$SYS_LIBS zlog"
@@ -24,7 +25,8 @@ case "${os}" in
     *)
       echo "Unsupported os: $os"
 esac
-LOCAL_LIB_DIR=/usr/local/lib
+LOCAL_LIB_DIR=/usr/local/lib64
+LOCAL_LIB_DIR2=/usr/local/lib
 TARGET_LIB_DIR=$dir/lib/$os
 
 # Make sure we can find sbt for the build
@@ -48,6 +50,7 @@ for i in $SYS_LIBS; do
 done
 for i in $LOCAL_LIBS; do
   (cd $LOCAL_LIB_DIR; tar cf - lib$i.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
+  (cd $LOCAL_LIB_DIR2; tar cf - lib$i.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
   if test "$os" = "Darwin" ; then
     (cd $LOCAL_LIB_DIR; tar cf - lib$i.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
   fi
