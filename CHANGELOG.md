@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.10] - 2022-12-05
+
+### Changed
+
+* Updated for csw-5.0.0
+* Fix for RA,Dec demand pos generated from native code
+* Added /opt/homebrew/lib and /opt/homebrew/include for Mac M1 support
+* Updated for CentOS-7 build
+
 ## [tcs-vslice v0.9] - 2022-02-23
 
 ### Changed
