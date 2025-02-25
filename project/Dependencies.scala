@@ -47,6 +47,6 @@ object Dependencies {
   val TcsDeploy = Seq(
     CSW.`csw-framework`,
     CSW.`csw-testkit` % Test,
-    Libs.`akka-actor-testkit-typed` % Test
+    Libs.`pekko-actor-testkit-typed` % Test
   )
 }

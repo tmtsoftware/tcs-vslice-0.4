@@ -1,7 +1,7 @@
 package tcs.enc
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import csw.command.client.messages.TopLevelActorMessage
 import csw.framework.models.CswContext
 import csw.framework.scaladsl.ComponentHandlers
@@ -75,7 +75,12 @@ object EncAssemblyHandlers {
               case (Some(currentBase), Some(currentCap)) =>
                 val (newBase, newCap) = getNextPos(demandBase, demandCap, currentBase, currentCap)
                 val newEvent = SystemEvent(cswCtx.componentInfo.prefix, encTelPosEventName)
-                  .madd(baseDemandKey.set(demandBase), capDemandKey.set(demandCap), baseCurrentKey.set(newBase), capCurrentKey.set(newCap))
+                  .madd(
+                    baseDemandKey.set(demandBase),
+                    capDemandKey.set(demandCap),
+                    baseCurrentKey.set(newBase),
+                    capCurrentKey.set(newCap)
+                  )
                 publisher.publish(newEvent)
                 new EventHandlerActor(ctx, cswCtx, Some(newBase), Some(newCap))
               case _ =>

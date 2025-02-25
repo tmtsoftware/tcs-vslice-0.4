@@ -1,7 +1,7 @@
 package tcs
 
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import org.apache.pekko.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import csw.logging.api.scaladsl.Logger
 import csw.logging.client.scaladsl.LoggerFactory
 import csw.params.core.generics.{Key, KeyType}
@@ -63,7 +63,8 @@ object EventHandler {
   private val capCurrentKey: Key[Double]  = KeyType.DoubleKey.make("capCurrent")
 }
 
-class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.TestActorMessages]) extends AbstractBehavior[Event](ctx) {
+class EventHandler(ctx: ActorContext[Event], testActor: ActorRef[EventHandler.TestActorMessages])
+    extends AbstractBehavior[Event](ctx) {
   import EventHandler._
 
   var maybeDemandPos: Option[EqCoord]  = None

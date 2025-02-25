@@ -1,14 +1,14 @@
 package tcs
 
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.scaladsl.AskPattern.Askable
-import akka.actor.typed.{ActorRef, Scheduler}
-import akka.util.Timeout
+import org.apache.pekko.actor.testkit.typed.scaladsl.TestProbe
+import org.apache.pekko.actor.typed.scaladsl.AskPattern.Askable
+import org.apache.pekko.actor.typed.{ActorRef, Scheduler}
+import org.apache.pekko.util.Timeout
 import csw.command.client.CommandServiceFactory
 import csw.command.client.messages.ContainerCommonMessage.GetContainerLifecycleState
 import csw.command.client.messages.{ContainerMessage, SupervisorContainerCommonMessages}
 import csw.command.client.models.framework.ContainerLifecycleState
-import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.Connection.PekkoConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.logging.api.scaladsl.Logger
 import csw.logging.client.scaladsl.{LoggerFactory, LoggingSystemFactory}
@@ -23,20 +23,21 @@ import csw.prefix.models.Prefix
 import csw.testkit.scaladsl.CSWService.{AlarmServer, EventServer}
 import csw.testkit.scaladsl.ScalaTestFrameworkTestKit
 import org.scalatest.funsuite.AnyFunSuiteLike
-import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+import csw.logging.client.commons.PekkoTypedExtension.UserActorFactory
 import tcs.EventHandler.StopTest
 
 import java.net.InetAddress
+import scala.compiletime.uninitialized
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 // Tests the TCS assembly together with the MCS and ENC assemblies
 class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventServer) with AnyFunSuiteLike {
   import frameworkTestKit._
 
-  private val pkConnection  = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
-  private val mcsConnection = AkkaConnection(ComponentId(Prefix("TCS.MCSAssembly"), ComponentType.Assembly))
-  private val encConnection = AkkaConnection(ComponentId(Prefix("TCS.ENCAssembly"), ComponentType.Assembly))
+  private val pkConnection  = PekkoConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
+  private val mcsConnection = PekkoConnection(ComponentId(Prefix("TCS.MCSAssembly"), ComponentType.Assembly))
+  private val encConnection = PekkoConnection(ComponentId(Prefix("TCS.ENCAssembly"), ComponentType.Assembly))
 
   private val basePosKey: Key[Coord]  = KeyType.CoordKey.make("base")
   private val prefix                  = Prefix("TCS.test")
@@ -55,7 +56,7 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
   implicit val timeout: Timeout = Timeout(3.minutes)
   LoggingSystemFactory.start("LoggingTestApp", "0.1", InetAddress.getLocalHost.getHostName, actorSystem)
   implicit lazy val log: Logger             = new LoggerFactory(prefix).getLogger
-  var container: ActorRef[ContainerMessage] = _
+  var container: ActorRef[ContainerMessage] = uninitialized
 
   private def assertThatContainerIsRunning(
       containerRef: ActorRef[ContainerMessage],
@@ -90,22 +91,22 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
 
   test("Assemblies should be locatable using Location Service") {
     log.info("Locating PointingKernelAssembly")
-    val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
-    pkAkkaLocation.connection shouldBe pkConnection
+    val pkPekkoLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
+    pkPekkoLocation.connection shouldBe pkConnection
     log.info("Located PointingKernelAssembly")
 
-    val mcsAkkaLocation = Await.result(locationService.resolve(mcsConnection, 10.seconds), 10.seconds).get
-    mcsAkkaLocation.connection shouldBe mcsConnection
+    val mcsPekkoLocation = Await.result(locationService.resolve(mcsConnection, 10.seconds), 10.seconds).get
+    mcsPekkoLocation.connection shouldBe mcsConnection
     log.info("Located MCSAssembly")
 
-    val encAkkaLocation = Await.result(locationService.resolve(encConnection, 10.seconds), 10.seconds).get
-    encAkkaLocation.connection shouldBe encConnection
+    val encPekkoLocation = Await.result(locationService.resolve(encConnection, 10.seconds), 10.seconds).get
+    encPekkoLocation.connection shouldBe encConnection
     log.info("Located ENCAssembly")
   }
 
   private def slewToTarget(ra: Angle, dec: Angle, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
-    val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
-    val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
+    val pkPekkoLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
+    val pkAssembly      = CommandServiceFactory.make(pkPekkoLocation)
     val eqCoord = EqCoord(
       ra = ra,
       dec = dec,
@@ -122,23 +123,23 @@ class TcsIntegrationTests extends ScalaTestFrameworkTestKit(AlarmServer, EventSe
     assert(resp == Completed(resp.runId))
     Thread.sleep(1000) // Wait for new demand
     val t1 = System.currentTimeMillis()
-    assert(Await.result(testActor ? EventHandler.MatchDemand, timeout.duration))
+    assert(Await.result(testActor ? EventHandler.MatchDemand.apply, timeout.duration))
     val t2   = System.currentTimeMillis()
     val secs = (t2 - t1) / 1000.0
     log.info(s"Matched demand to $raDecStr (time: $secs secs)")
   }
 
   private def setOffset(x: Double, y: Double, testActor: ActorRef[EventHandler.TestActorMessages]): Unit = {
-    val pkAkkaLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
-    val pkAssembly     = CommandServiceFactory.make(pkAkkaLocation)
-    val setup          = Setup(prefix, CommandName("SetOffset"), obsId).add(xCoordinate.set(x)).add(yCoordinate.set(y))
-    val resp           = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
+    val pkPekkoLocation = Await.result(locationService.resolve(pkConnection, 10.seconds), 10.seconds).get
+    val pkAssembly      = CommandServiceFactory.make(pkPekkoLocation)
+    val setup           = Setup(prefix, CommandName("SetOffset"), obsId).add(xCoordinate.set(x)).add(yCoordinate.set(y))
+    val resp            = Await.result(pkAssembly.submitAndWait(setup), timeout.duration)
     if (resp != Completed(resp.runId))
       log.error(s"Received error response from SetOffset $x $y (arcsec)")
     assert(resp == Completed(resp.runId))
     Thread.sleep(1000) // Wait for new demand
     val t1 = System.currentTimeMillis()
-    assert(Await.result(testActor ? EventHandler.MatchDemand, timeout.duration))
+    assert(Await.result(testActor ? EventHandler.MatchDemand.apply, timeout.duration))
     val t2   = System.currentTimeMillis()
     val secs = (t2 - t1) / 1000.0
     log.info(s"Matched offset $x $y demand (time: $secs secs)")

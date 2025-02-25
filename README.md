@@ -29,10 +29,10 @@ Note: For Ubuntu, install these packages:
 
 ```
 sudo apt install build-essential
-sudo apt-get install -y openjdk-11-jdk
+sudo apt-get install -y openjdk-21-jdk
 ```
 
-Currently this project requires that a number of shared libraries are installed in a known location (default: /usr/local/lib),
+Currently, this project requires that a number of shared libraries are installed in a known location (default: /usr/local/lib),
 which must also be included the LD_LIBRARY_PATH environment variable (On Linux).
 
 Run `make; sudo make install` in the following projects (Note: In these projects the Makefile calls `cmake` to do the actual build).
@@ -80,7 +80,7 @@ and thus produce position events.*
 
 To run the assemblies, run: 
     
-    csw-services start  # Note: Make sure you are using the version for csw-4.0.0-M1 or greater
+    csw-services start  # Note: Make sure you are using the version of csw used in this and dependent projects
 
     sbt stage
 

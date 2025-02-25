@@ -1,8 +1,8 @@
 package tcs.pk
 
-import akka.util.Timeout
+import org.apache.pekko.util.Timeout
 import csw.command.client.CommandServiceFactory
-import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.Connection.PekkoConnection
 import csw.location.api.models.{ComponentId, ComponentType}
 import csw.params.commands.CommandIssue.ParameterValueOutOfRangeIssue
 import csw.params.commands.CommandResponse.Invalid
@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer) with AnyFunSuiteLike {
 
   import frameworkTestKit._
-  private val connection              = AkkaConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
+  private val connection              = PekkoConnection(ComponentId(Prefix("TCS.PointingKernelAssembly"), ComponentType.Assembly))
   private val basePosKey: Key[Coord]  = KeyType.CoordKey.make("base")
   private val prefix                  = Prefix("TCS.pk_client")
   private val slewToTargetCommandName = CommandName("SlewToTarget")
@@ -35,14 +35,14 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
   }
 
   test("Assembly should be locatable using Location Service") {
-    val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
-    akkaLocation.connection shouldBe connection
+    val pekkoLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
+    pekkoLocation.connection shouldBe connection
   }
 
   test("Assembly should validate RA coordinate in Setup") {
     import Angle._
-    val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
-    val assembly     = CommandServiceFactory.make(akkaLocation)
+    val pekkoLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
+    val assembly      = CommandServiceFactory.make(pekkoLocation)
     val eqCoord = EqCoord(
       ra = 120.arcHour,
       dec = 20.degree,
@@ -58,8 +58,8 @@ class PkAssemblyTest extends ScalaTestFrameworkTestKit(AlarmServer, EventServer)
 
   test("Assembly should validate Dec coordinate in Setup") {
     import Angle._
-    val akkaLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
-    val assembly     = CommandServiceFactory.make(akkaLocation)
+    val pekkoLocation = Await.result(locationService.resolve(connection, 10.seconds), 10.seconds).get
+    val assembly      = CommandServiceFactory.make(pekkoLocation)
     val eqCoord = EqCoord(
       ra = 12.arcHour,
       dec = 200.degree,

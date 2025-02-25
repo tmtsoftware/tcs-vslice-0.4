@@ -6,13 +6,13 @@ import sbt._
 import scala.util.control.NonFatal
 
 object Libs {
-  val ScalaVersion = "2.13.8"
+  val ScalaVersion = "3.6.2"
 
-  val `jnr-ffi` = "com.github.jnr" % "jnr-ffi" % "2.2.4"
+  val `jnr-ffi` = "com.github.jnr" % "jnr-ffi" % "2.2.17"
 
-  val `akka-actor-testkit-typed` = "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.18"
-  val `scalatest`                = "org.scalatest"     %% "scalatest"                % "3.2.11" // Apache License 2.0
-  val `scala-async` = "org.scala-lang.modules" %% "scala-async" % "1.0.1" // BSD 3-clause "New" or "Revised" License
+  val `pekko-actor-testkit-typed` = "org.apache.pekko" %% "pekko-actor-testkit-typed" % "1.1.2"
+  val `scalatest`                = "org.scalatest"     %% "scalatest"                % "3.2.19" // Apache License 2.0
+//  val `dotty-cps-async`           = "com.github.rssh"        %% "dotty-cps-async"           % "0.9.23"
 }
 
 object CSW {

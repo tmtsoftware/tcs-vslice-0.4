@@ -30,10 +30,13 @@ class SimulationUtilTest extends AnyFunSuite {
     val current                = AltAzCoord(Coords.Tag("test"), 50.degree, 10.degree)
     val demand                 = AltAzCoord(Coords.Tag("test2"), 15.degree, 25.degree)
     var currentPos: AltAzCoord = current
-    do {
+    while {
       currentPos = getNextPos(demand, currentPos)
       val dist = Angle.distance(currentPos.alt.toRadian, currentPos.az.toRadian, demand.alt.toRadian, demand.az.toRadian)
       println(s"XXX dist = ${dist * Angle.R2S} arcsec")
-    } while (math.abs(currentPos.alt.uas - demand.alt.uas) > closeEnoughUas || math.abs(currentPos.az.uas - demand.az.uas) > closeEnoughUas)
+      (math.abs(currentPos.alt.uas - demand.alt.uas) > closeEnoughUas || math.abs(
+        currentPos.az.uas - demand.az.uas
+      ) > closeEnoughUas)
+    } do ()
   }
 }

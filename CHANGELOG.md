@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [tcs-vslice v0.10] - 2025- (In progress)
+
+### Changed
+
+* Updated for csw-6.x
+
 ## [tcs-vslice v0.10] - 2022-12-05
 
 ### Changed

@@ -20,9 +20,7 @@ object Common extends AutoPlugin {
       "UTF-8",
       "-feature",
       "-unchecked",
-      "-deprecation",
-      "-Xlint",
-      "-Ywarn-dead-code"
+      "-deprecation"
     ),
     Compile / doc / javacOptions ++= Seq("-Xdoclint:none"),
     Test / testOptions ++= Seq(
@@ -33,7 +31,7 @@ object Common extends AutoPlugin {
       Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
     ),
     resolvers += "jitpack" at "https://jitpack.io",
-    version := "0.9.0",
+    version := "0.10.0",
     fork := true,
     Test / parallelExecution := false,
     autoCompilerPlugins := true,

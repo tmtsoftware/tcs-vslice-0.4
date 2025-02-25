@@ -1,17 +1,17 @@
 package tcs.client
 
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 
 import java.net.InetAddress
-import akka.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
-import akka.util.Timeout
+import org.apache.pekko.actor.typed.{ActorSystem, Behavior, SpawnProtocol}
+import org.apache.pekko.util.Timeout
 import csw.command.client.CommandServiceFactory
 import csw.event.api.scaladsl.EventService
 import csw.event.api.scaladsl.SubscriptionModes.RateLimiterMode
 import csw.event.client.EventServiceFactory
 import csw.location.api.models.ComponentId
 import csw.location.api.models.ComponentType.Assembly
-import csw.location.api.models.Connection.AkkaConnection
+import csw.location.api.models.Connection.PekkoConnection
 import csw.location.client.ActorSystemFactory
 import csw.location.client.scaladsl.HttpLocationServiceFactory
 import csw.logging.client.scaladsl.{GenericLoggerFactory, LoggingSystemFactory}
@@ -24,7 +24,7 @@ import csw.params.core.models.ProperMotion
 import csw.params.events.{Event, EventKey, SystemEvent}
 import csw.prefix.models.Prefix
 import csw.prefix.models.Subsystem.TCS
-import csw.logging.client.commons.AkkaTypedExtension.UserActorFactory
+import csw.logging.client.commons.PekkoTypedExtension.UserActorFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -44,7 +44,7 @@ object TcsClient extends App {
   val pkAssemblyPrefix  = Prefix(TCS, "PointingKernelAssembly")
   val encAssemblyPrefix = Prefix(TCS, "ENCAssembly")
   val mcsAssemblyPrefix = Prefix(TCS, "MCSAssembly")
-  val connection        = AkkaConnection(ComponentId(pkAssemblyPrefix, Assembly))
+  val connection        = PekkoConnection(ComponentId(pkAssemblyPrefix, Assembly))
 
   Options.parse(args, run)
 

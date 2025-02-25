@@ -1,7 +1,7 @@
 package tcs.mcs
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import org.apache.pekko.actor.typed.Behavior
+import org.apache.pekko.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import csw.command.client.messages.TopLevelActorMessage
 import csw.event.api.scaladsl.SubscriptionModes.RateLimiterMode
 import csw.framework.models.CswContext
