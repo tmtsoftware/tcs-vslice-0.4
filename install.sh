@@ -54,7 +54,7 @@ for i in $LOCAL_LIBS; do
 done
 
 d=tpk-jni
-(cd $d; make)
+(cd $d; make clean; make)
 (cd $d/build/src; tar cf - lib$d.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
 if test "$os" = "Darwin" ; then
    (cd $d/build/src; tar cf - lib$d.*.$LIB_SUFFIX*) | (cd $TARGET_LIB_DIR; tar xf -)
