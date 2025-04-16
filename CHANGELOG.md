@@ -1,9 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [tcs-vslice v0.11] - 2025-02-03
+## [tcs-vslice v0.12] - 2025-04-14
 
 ### Changed
+
+* Updated dependencies
+* Updated csw version to csw-6.0.0-RC1
+
+## [tcs-vslice v0.12] - 2025-04-16
+
+* Updated for csw-6.0.0-RC4
+
+## [tcs-vslice v0.11] - 2025-02-03
 
 * Updated for csw-6.x
 

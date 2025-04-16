@@ -90,7 +90,7 @@ To run the assemblies, run:
 To send a command to the pk assembly, you can use the tcs-client command line application:
 
 ```
-tcs-client 0.11.0
+tcs-client 0.12.0
 Usage: tcs-client [options]
 
   -c, --command <command>  The command to send to the pk assembly (One of: SlewToTarget, SetOffset. Default: SlewToTarget)
