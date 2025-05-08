@@ -50,7 +50,7 @@ You can also use `make PREFIX=/my/dir` to change the installation directory.
 In order to make it easier to test under MacOS, a Homebrew installation of the necessary
 shared libraries for the TCS pk assembly is now available for MacOS-12 (Intel CPU).
 Note that these libraries are precompiled, since the TPK dependency is from a private GitHub repo, 
-making it imposible to build on a user's system without the necessary permissions.
+making it impossible to build on a user's system without the necessary permissions.
 The `brew-zip.sh` script is used to build the zip file used by the brew tap, but requires
 that all the sources are available (in ../csw- and ../../TPK).
 
